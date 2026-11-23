@@ -1,0 +1,31 @@
+services:
+  dev:
+    build: .
+    image: fastgd-build
+    working_dir: /src
+    volumes:
+      - .:/src
+    environment:
+      GOPATH: /src/.cache/go
+      GOCACHE: /src/.cache/go-build
+      HOME: /tmp
+      GOFLAGS: -buildvcs=false
+    mem_limit: 24g
+    memswap_limit: 24g
+
+  e2e:
+    image: fastgd-build
+    working_dir: /src
+    volumes:
+      - .:/src:ro
+    devices:
+      - /dev/fuse
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      FASTGD_BIN: /src/bin/fastgd
+      HOME: /tmp
+    mem_limit: 4g
+    memswap_limit: 4g
