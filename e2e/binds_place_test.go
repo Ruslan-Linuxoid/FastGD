@@ -15,7 +15,7 @@ func TestABindingGoesOnNoMount(t *testing.T) {
 	d := newDaemon(t, e)
 	d.start()
 	at := places(t, d)
-	d.mustMount("add", "Work/Docs", at+"/docs")
+	d.mustMount("add", "My Drive/Work/Docs", at+"/docs")
 	d.stop()
 	d.start()
 	if err := os.Mkdir(at+"/tmp", 0o755); err != nil {
@@ -24,7 +24,7 @@ func TestABindingGoesOnNoMount(t *testing.T) {
 	if err := syscall.Mount("tmpfs", at+"/tmp", "tmpfs", 0, ""); err != nil {
 		t.Fatal(err)
 	}
-	out, err := d.mountCmd("add", "Work", at+"/tmp")
+	out, err := d.mountCmd("add", "My Drive/Work", at+"/tmp")
 	if err == nil || !strings.Contains(out, "something is mounted there") {
 		t.Fatalf("mount add onto a mount: %v\n%s", err, out)
 	}

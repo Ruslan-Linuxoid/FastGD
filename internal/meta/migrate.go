@@ -91,7 +91,9 @@ func steps() []step {
 		{schemaV21, schemaV22, (*Store).ownShelf},
 		{schemaV22, schemaV23, (*Store).countBusy},
 		{schemaV23, schemaV24, (*Store).keepNotes},
-		{schemaV24, schemaVersion, (*Store).keepShownNames},
+		{schemaV24, schemaV25, (*Store).keepShownNames},
+		{schemaV25, schemaV26, (*Store).addTop},
+		{schemaV26, schemaVersion, (*Store).addShared},
 	}
 }
 
@@ -125,6 +127,9 @@ func checkSchema(path string, v int) error {
 func (s *Store) createSchema() error {
 	if _, err := s.w.Exec(schema); err != nil {
 		return fmt.Errorf("meta: create schema: %w", err)
+	}
+	if err := s.countSharedChanges(); err != nil {
+		return err
 	}
 	if err := s.renameGroups(); err != nil {
 		return fmt.Errorf("meta: %w", err)

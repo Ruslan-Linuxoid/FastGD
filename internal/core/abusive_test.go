@@ -100,7 +100,7 @@ func TestFlaggedFileOfAnotherGetsNoAccess(t *testing.T) {
 		t.Fatalf("the open after the refusal went to Drive %d times", n)
 	}
 	st := readStatus(t, env)
-	if st.AbuseRefused.IsZero() || st.AbusivePath != "f.bin" {
+	if st.AbuseRefused.IsZero() || st.AbusivePath != "My Drive/f.bin" {
 		t.Fatalf("status tells the refusal at %v of %q", st.AbuseRefused, st.AbusivePath)
 	}
 

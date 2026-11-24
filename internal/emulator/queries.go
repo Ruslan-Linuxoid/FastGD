@@ -61,3 +61,13 @@ func (e *Emulator) ResetRequests() {
 	e.requests = nil
 	e.reads, e.writes = perSecond{}, perSecond{}
 }
+
+func (e *Emulator) Checksum(id string) (string, int64, bool) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	f := e.files[id]
+	if f == nil {
+		return "", 0, false
+	}
+	return f.md5, int64(len(f.Content)), true
+}

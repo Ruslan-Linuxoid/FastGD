@@ -132,7 +132,7 @@ func TestKillAfterTheMoveOfAFileDriveNeverTookLosesNothing(t *testing.T) {
 	env.Tune = nil
 	env.Restart()
 	rounds(env, 2)
-	if names := env.Names(""); len(names) != 1 || names[0] != lostDir {
+	if names := env.Names(""); len(names) != 0 || !hasLost(env) {
 		t.Fatalf("the root holds %q, want Lost and Found alone", names)
 	}
 	requireShelved(t, env, "", "bad", ".txt", bad)

@@ -95,11 +95,14 @@ func (f *FS) checkCreateName(p meta.Item, name string, kind meta.Kind) error {
 }
 
 func (f *FS) checkCreateRights(p meta.Item, kind meta.Kind) error {
+	if meta.FixedIn(p) {
+		return syscall.EPERM
+	}
 	if err := meta.MayCreateIn(p); err != nil {
 		return errno(err)
 	}
 	if p.Denied.Has(meta.DenyAddChildren) {
-		return syscall.EACCES
+		return f.lacksRight("add an item to the folder", p, "canAddChildren")
 	}
 	levels := 0
 	if kind == meta.KindDir {
@@ -161,7 +164,7 @@ func (f *FS) Truncate(ctx context.Context, ino uint64, size int64) error {
 	if it, err = f.edits.TakenUp(it); err != nil {
 		return f.eio("truncate", err, "id", it.ID)
 	}
-	if err := truncateAllowed(it, size); err != nil {
+	if err := f.truncateAllowed(it, size); err != nil {
 		return err
 	}
 	if err := f.edits.Truncate(ctx, it, size); err != nil {
@@ -170,10 +173,10 @@ func (f *FS) Truncate(ctx context.Context, ino uint64, size int64) error {
 	return nil
 }
 
-func truncateAllowed(it meta.Item, size int64) error {
+func (f *FS) truncateAllowed(it meta.Item, size int64) error {
 	if it.Denied.Has(meta.DenyDownload) && size != 0 && (!it.ContentLocal() || it.Base != 0) {
 
-		return syscall.EACCES
+		return f.lacksRight("download the file to cut it", it, "canDownload")
 	}
 
 	switch it.Kind {
@@ -210,9 +213,13 @@ func (f *FS) SetMtime(ino uint64, mtime time.Time) error {
 	if err != nil {
 		return err
 	}
-	if it.Kind == meta.KindDoc || it.Denied.Has(meta.DenyModify) {
+	if it.Kind == meta.KindDoc {
 
 		return syscall.EACCES
+	}
+	if it.Denied.Has(meta.DenyModify) {
+
+		return f.lacksRight("set the time of the file", it, "canModifyContent")
 	}
 
 	if err := f.store.SetMtime(it.Ino, mtime); err != nil {

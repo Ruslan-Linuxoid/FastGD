@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"regexp"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -58,13 +59,18 @@ func versionOf(linked string, bi *debug.BuildInfo) string {
 	if linked != "dev" || bi == nil || bi.Main.Version == "" || bi.Main.Version == "(devel)" {
 		return linked
 	}
+	if pseudoVersion.MatchString(bi.Main.Version) || strings.HasSuffix(bi.Main.Version, "+dirty") {
+		return linked
+	}
 	for _, s := range bi.Settings {
-		if s.Key == "vcs.revision" {
+		if s.Key == "vcs.modified" && s.Value == "true" {
 			return linked
 		}
 	}
 	return bi.Main.Version
 }
+
+var pseudoVersion = regexp.MustCompile(`[-.][0-9]{14}-[0-9a-f]{12}(\+[a-z]+)?$`)
 
 func main() {
 	if len(os.Args) == 2 && (os.Args[1] == "--version" || os.Args[1] == "version") {

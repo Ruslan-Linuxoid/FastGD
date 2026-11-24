@@ -34,7 +34,7 @@ func TestRenameOutOfLostAndFoundLeavesItWhole(t *testing.T) {
 		t.Fatal(err)
 	}
 	requireItemTakenOutOfLostAndFound(t, s, it)
-	requireEmptiedFoldersGone(t, s, v, root, sh)
+	requireEmptiedFoldersGone(t, s, v, sh)
 }
 
 func requireLostAndFoundKeepsToItself(t *testing.T, it, root Item, sh Shelved) {
@@ -64,7 +64,7 @@ func requireItemTakenOutOfLostAndFound(t *testing.T, s *Store, it Item) {
 	}
 }
 
-func requireEmptiedFoldersGone(t *testing.T, s *Store, v Visible, root Item, sh Shelved) {
+func requireEmptiedFoldersGone(t *testing.T, s *Store, v Visible, sh Shelved) {
 	t.Helper()
 	for _, dir := range sh.Dirs {
 		if _, err := s.ByIno(dir.Ino); !errors.Is(err, ErrNotFound) {
@@ -72,7 +72,7 @@ func requireEmptiedFoldersGone(t *testing.T, s *Store, v Visible, root Item, sh 
 		}
 	}
 	gone := v.Pruned()
-	if len(gone) != 2 || gone[0] != (Gone{sh.Dirs[0].Ino, "docs"}) || gone[1] != (Gone{root.Ino, LostName}) {
+	if len(gone) != 2 || gone[0] != (Gone{sh.Dirs[0].Ino, "docs"}) || gone[1] != (Gone{RootIno, LostName}) {
 		t.Fatalf("the names noted as gone are %+v", gone)
 	}
 }
@@ -115,7 +115,7 @@ func requireFolderTakesAFileID(t *testing.T, s *Store, dir, file Item) Item {
 	if file, err = s.ByIno(file.Ino); err != nil || file.Parent != "1dir" {
 		t.Fatalf("the file in the folder names the folder %q: %v", file.Parent, err)
 	}
-	if p, err := s.Path(file.ID); err != nil || p != "dir/f.txt" {
+	if p, err := s.Path(file.ID); err != nil || p != "My Drive/dir/f.txt" {
 		t.Fatalf("the mount shows the file at %q: %v", p, err)
 	}
 	if left, _ := s.Shelf().Unfinished(); len(left) != 0 {

@@ -212,7 +212,7 @@ func TestFileIDOfALocalFileInDriveSetsTheStateAside(t *testing.T) {
 		t.Fatalf("under the name the mount shows %q, want what Drive holds", got)
 	}
 	as := requireShelved(t, env, "", "mine", ".bin", mine)
-	if text := requireNote(t, env, lostDir, as); !strings.Contains(text, "Лежал в Drive: mine.bin\n") {
+	if text := requireNote(t, env, lostDir, as); !strings.Contains(text, "Лежал в Drive: My Drive/mine.bin\n") {
 		t.Fatalf("the note says %q", text)
 	}
 }

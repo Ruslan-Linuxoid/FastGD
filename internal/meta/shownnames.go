@@ -41,7 +41,7 @@ func (s *Store) keepShownNames() error {
 			return err
 		}
 	}
-	if _, err := tx.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, schemaVersion)); err != nil {
+	if _, err := tx.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, schemaV25)); err != nil {
 		return err
 	}
 	return tx.Commit()

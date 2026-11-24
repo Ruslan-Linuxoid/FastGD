@@ -40,7 +40,8 @@ func requireChunkRefusalShown(t *testing.T, env *testenv.Env, logged string) {
 	}
 	requireReadOnly(t, env, 1)
 	st := readStatus(t, env)
-	if len(st.Failing) != 1 || st.Failing[0].Path != "big.bin" || !strings.Contains(st.Failing[0].LastError, logged) {
+	if len(st.Failing) != 1 || st.Failing[0].Path != "My Drive/big.bin" ||
+		!strings.Contains(st.Failing[0].LastError, logged) {
 		t.Fatalf("status shows the failing upload as %+v", st.Failing)
 	}
 }

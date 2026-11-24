@@ -31,7 +31,7 @@ func requireFolderGoneShelves(t *testing.T, remove func(env *testenv.Env, id str
 	env.Emu.ResetRequests()
 	remove(env, top)
 	poll(t, env)
-	if names := env.Names(""); len(names) != 1 || names[0] != lostDir {
+	if names := env.Names(""); len(names) != 0 || !hasLost(env) {
 		t.Fatalf("the root holds %q, want Lost and Found alone", names)
 	}
 	requireShelved(t, env, "Проект/черновики/deep", "note", ".txt", deep)

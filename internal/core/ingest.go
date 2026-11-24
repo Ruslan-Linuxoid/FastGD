@@ -31,6 +31,9 @@ func (f *FS) initialLoad(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("initial load: %w", err)
 	}
+	if err := f.loadDrives(ctx); err != nil {
+		return fmt.Errorf("initial load: %w", err)
+	}
 	if err := f.PollChanges(ctx); err != nil {
 		return fmt.Errorf("initial load: %w", err)
 	}
@@ -65,7 +68,7 @@ func (f *FS) startLoad(ctx context.Context, start time.Time) (string, error) {
 	if err := f.store.SetState(meta.StateChangesToken, token); err != nil {
 		return "", err
 	}
-	return rootID, f.store.SetRoot(rootID, start)
+	return rootID, f.store.SetTop(rootID, start)
 }
 
 func (f *FS) rereadTree(ctx context.Context) error {
@@ -105,6 +108,9 @@ func (f *FS) reread(ctx context.Context) error {
 		return err
 	}
 	listed := map[string]bool{rootID: true}
+	if err := f.rereadDrives(ctx, listed, old); err != nil {
+		return err
+	}
 
 	err = f.opt.Drive.ListAll(ctx, func(files []drive.File) error {
 		changes := make([]drive.Change, 0, len(files))
@@ -145,9 +151,17 @@ func (f *FS) toItem(df drive.File) meta.Item {
 		Ctime:          df.Created,
 		ShortcutTarget: df.ShortcutTarget,
 		Denied:         deniedOf(df.Can),
+		Shared:         df.Shared,
 	}
-	if len(df.Parents) > 0 {
+	switch {
+	case df.DriveID != "" && df.ID == df.DriveID:
+
+		it.Parent = meta.SharedDrivesID
+	case len(df.Parents) > 0:
 		it.Parent = df.Parents[0]
+	case df.Shared:
+
+		it.Parent = meta.SharedWithMeID
 	}
 	if len(df.Parents) > 1 {
 
@@ -169,6 +183,7 @@ func deniedOf(can drive.Rights) meta.Denied {
 		{can.AddChildren, meta.DenyAddChildren},
 		{can.RemoveChildren, meta.DenyRemoveChildren},
 		{can.Download, meta.DenyDownload},
+		{can.OutOfDrive, meta.DenyOutOfDrive},
 	} {
 		if !r.ok {
 			d |= r.deny

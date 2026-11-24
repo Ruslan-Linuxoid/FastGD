@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"os"
+	"slices"
 	"syscall"
 	"time"
 
@@ -66,11 +67,16 @@ func lacksBase(src string, it meta.Item, size int64) (bool, error) {
 }
 
 func (f *FS) restoreDirs(dirs []string) (meta.Item, error) {
-	rootID, _, err := f.store.GetState(meta.StateRootID)
-	if err != nil {
-		return meta.Item{}, err
+	from := meta.TopID
+	if len(dirs) == 0 || !slices.Contains([]string{meta.MyDriveName, meta.SharedWithMeName, meta.SharedDrivesName},
+		dirs[0]) {
+		root, _, err := f.store.GetState(meta.StateRootID)
+		if err != nil {
+			return meta.Item{}, err
+		}
+		from = root
 	}
-	dir, err := f.store.ByID(rootID)
+	dir, err := f.store.ByID(from)
 	if err != nil {
 		return meta.Item{}, err
 	}

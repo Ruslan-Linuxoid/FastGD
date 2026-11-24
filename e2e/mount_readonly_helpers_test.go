@@ -25,11 +25,11 @@ func requireListing(t *testing.T, d *daemon) {
 
 func requireFind(t *testing.T, d *daemon) {
 	t.Helper()
-	out, err := exec.CommandContext(t.Context(), "find", d.mnt, "-mindepth", "1").Output()
+	out, err := exec.CommandContext(t.Context(), "find", d.myDrive(), "-mindepth", "1").Output()
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := strings.Fields(strings.ReplaceAll(string(out), d.mnt+"/", ""))
+	got := strings.Fields(strings.ReplaceAll(string(out), d.myDrive()+"/", ""))
 	slices.Sort(got)
 	want := []string{"Photos", "Photos/2025", "Photos/small.txt", "Photos/video.bin"}
 	if !slices.Equal(got, want) {

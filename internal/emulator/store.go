@@ -7,7 +7,7 @@ import (
 )
 
 func (e *Emulator) storeContent(f *File, content []byte) {
-	f.Content = append([]byte(nil), content...)
+	f.Content = append(e.room(int64(len(content))), content...)
 	if e.corrupt > 0 && len(f.Content) > 0 {
 		e.corrupt--
 		f.Content[len(f.Content)/2] ^= 0xff
@@ -65,6 +65,7 @@ func (e *Emulator) commitCreate(meta *drive.File, content []byte) *File {
 	now := e.now()
 	f := &File{ID: id, Name: meta.Name, MimeType: meta.MimeType, Parents: append([]string(nil), meta.Parents...),
 		Version: 1, Created: now, Modified: now}
+	f.DriveID = e.driveOf(f.Parents)
 	if f.MimeType == "" {
 		f.MimeType = "application/octet-stream"
 	}

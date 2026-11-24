@@ -31,7 +31,7 @@ func (d *daemon) inDB(queries ...string) {
 	}
 }
 
-func failing(status, path string) bool { return strings.Contains(status, "\n  "+path+"\n") }
+func failing(status, path string) bool { return strings.Contains(status, "\n  My Drive/"+path+"\n") }
 
 func TestUndoneChangesShowOnOpenFiles(t *testing.T) {
 	e := startEmu(t)

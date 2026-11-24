@@ -13,6 +13,14 @@ type File struct {
 
 	Parents []string
 
+	DriveID string
+
+	SharedWithMe bool
+
+	OpenedByLink bool
+
+	driveRoot bool
+
 	Trashed  bool
 	Content  []byte
 	Version  int64
@@ -24,6 +32,8 @@ type File struct {
 	CannotModify, CannotTrash, CannotRename, CannotMove, CannotAddChildren, CannotRemoveChildren bool
 
 	CannotMoveWithinDrive bool
+
+	CannotMoveOutOfDrive bool
 
 	RightsLeftOut []string
 
@@ -59,6 +69,9 @@ func (e *Emulator) Put(f File) string {
 		f.Modified = f.Created
 	}
 	f.Parents = append([]string(nil), f.Parents...)
+	if f.DriveID == "" {
+		f.DriveID = e.driveOf(f.Parents)
+	}
 	f.Content = append([]byte(nil), f.Content...)
 	f.md5 = md5Hex(f.Content)
 	e.revise(&f)

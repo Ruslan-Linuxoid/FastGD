@@ -154,6 +154,10 @@ func (f *FS) sendMeta(ctx context.Context, it meta.Item) error {
 		Trashed:   it.Trashed,
 		Modified:  it.Mtime,
 	}
+	if meta.IsVirtual(it.Parent) || meta.IsVirtual(it.RParent) {
+
+		update.OldParent, update.NewParent = "", ""
+	}
 	sent := sentByUpdate(update)
 	rf, err := f.opt.Drive.UpdateMeta(ctx, it.ID, update)
 	if err != nil {

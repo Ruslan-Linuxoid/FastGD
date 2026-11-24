@@ -18,7 +18,7 @@ type MetaUpdate struct {
 
 func (c *Client) driveTime(ctx context.Context, id string) (string, error) {
 	rf, err := get(ctx, c, costOther, func() (*drive.File, error) {
-		return c.svc.Files.Get(id).Fields("modifiedTime").Context(ctx).Do()
+		return c.svc.Files.Get(id).Fields("modifiedTime").SupportsAllDrives(true).Context(ctx).Do()
 	})
 	if err != nil {
 		return "", fmt.Errorf("drive: the time of %s: %w", id, err)
@@ -42,7 +42,7 @@ func (c *Client) UpdateMeta(ctx context.Context, id string, u MetaUpdate) (*File
 	case !u.Modified.IsZero():
 		f.ModifiedTime = stamp(u.Modified)
 	}
-	call := c.svc.Files.Update(id, f).Fields(fileFields).Context(ctx)
+	call := c.svc.Files.Update(id, f).Fields(fileFields).SupportsAllDrives(true).Context(ctx)
 	if u.NewParent != "" && u.NewParent != u.OldParent {
 		call = call.AddParents(u.NewParent)
 		if u.OldParent != "" {

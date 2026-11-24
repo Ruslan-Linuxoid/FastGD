@@ -25,9 +25,12 @@ func (f *FS) child(parent uint64, name string) (dir, it meta.Item, err error) {
 }
 
 func (f *FS) Unlink(parent uint64, name string) error {
-	_, it, err := f.child(parent, name)
+	dir, it, err := f.child(parent, name)
 	if err != nil {
 		return err
+	}
+	if meta.FixedIn(dir) {
+		return syscall.EPERM
 	}
 	if it.Kind == meta.KindDir {
 		return syscall.EISDIR
@@ -36,9 +39,12 @@ func (f *FS) Unlink(parent uint64, name string) error {
 }
 
 func (f *FS) Rmdir(parent uint64, name string) error {
-	_, it, err := f.child(parent, name)
+	dir, it, err := f.child(parent, name)
 	if err != nil {
 		return err
+	}
+	if meta.FixedIn(dir) {
+		return syscall.EPERM
 	}
 	if it.Kind != meta.KindDir {
 		return syscall.ENOTDIR
@@ -54,9 +60,12 @@ func (f *FS) Rmdir(parent uint64, name string) error {
 }
 
 func (f *FS) trash(v meta.Visible, it meta.Item) error {
+	if meta.Fixed(it) {
+		return syscall.EPERM
+	}
 	if it.Denied.Has(meta.DenyTrash) {
 
-		return syscall.EACCES
+		return f.lacksRight("put the item in the trash", it, "canTrash")
 	}
 	if err := v.Trash(it.Ino); err != nil {
 		return f.eio("trash", err, "id", it.ID)

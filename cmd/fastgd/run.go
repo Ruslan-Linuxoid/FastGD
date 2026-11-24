@@ -183,13 +183,14 @@ func (m *mounted) shutDown() error {
 func driveClient(ctx context.Context, cfg *config.Config, log *slog.Logger) (*drive.Client, error) {
 	speed := drive.Speed{Download: cfg.MaxDownloadSpeed, Upload: cfg.MaxUploadSpeed}
 	if u := os.Getenv(driveURLEnv); u != "" {
-		return drive.New(ctx, drive.Options{BaseURL: u, HTTPClient: &http.Client{Transport: drive.Transport()}, Speed: speed})
+		return drive.New(ctx, drive.Options{BaseURL: u, HTTPClient: &http.Client{Transport: drive.Transport()}, Speed: speed,
+			Log: log})
 	}
 	hc, err := auth.HTTPClient(ctx, cfg.ClientIDFile, cfg.TokenFile, drive.Transport(), log)
 	if err != nil {
 		return nil, err
 	}
-	return drive.New(ctx, drive.Options{HTTPClient: hc, Speed: speed})
+	return drive.New(ctx, drive.Options{HTTPClient: hc, Speed: speed, Log: log})
 }
 
 func prepareMountPoint(dir string, log *slog.Logger) error {

@@ -59,6 +59,8 @@ type Item struct {
 
 	Service bool
 
+	Shared bool
+
 	shownAs string
 }
 
@@ -75,6 +77,8 @@ type Store struct {
 	r conn
 
 	readFault atomic.Pointer[func(Item) error]
+
+	shared sharedList
 }
 
 func (s *Store) FailItemReads(fn func(Item) error) {

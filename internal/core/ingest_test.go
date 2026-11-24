@@ -250,7 +250,7 @@ func TestLoadedItemsAreFoundByIDAndPath(t *testing.T) {
 	if it.MD5 != hex.EncodeToString(sum[:]) || it.Version != 1 || it.Size != 5 {
 		t.Fatalf("c.txt in the database: %+v", it)
 	}
-	if p, err := st.Path(c); err != nil || p != "a/b/c.txt" {
+	if p, err := st.Path(c); err != nil || p != "My Drive/a/b/c.txt" {
 		t.Fatalf("Path(c.txt) = %q, %v", p, err)
 	}
 	for _, id := range []string{shared, inShared} {

@@ -38,7 +38,7 @@ func TestKillInTheMoveOfABaseGivenUpLosesNoBase(t *testing.T) {
 	d.start()
 	var lost []string
 	waitFor(t, "the edit in Lost and Found or in Drive", 2*time.Minute, func() bool {
-		lost, _ = filepath.Glob(d.path("Lost and Found (FastGD)") + "/a (конфликт *).bin")
+		lost, _ = filepath.Glob(d.path("/Lost and Found (FastGD)/My Drive") + "/a (конфликт *).bin")
 		got, _ := e.Get(id)
 		return len(lost) > 0 || !bytes.Equal(got.Content, content)
 	})

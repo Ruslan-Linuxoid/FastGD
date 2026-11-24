@@ -1,6 +1,7 @@
 package meta
 
 import (
+	"cmp"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -8,8 +9,14 @@ import (
 	"strings"
 )
 
-func (p *paths) shownItems(items []Item) []Item {
-	return slices.DeleteFunc(items, func(it Item) bool { return !p.linkShown(it) })
+func (p *paths) shownItems(items []Item) ([]Item, error) {
+	var failed error
+	out := slices.DeleteFunc(items, func(it Item) bool {
+		empty, err := p.emptyDrives(it)
+		failed = cmp.Or(failed, err)
+		return !p.linkShown(it) || empty
+	})
+	return out, failed
 }
 
 func (p *paths) siblings(parent, dname string) ([]Item, error) {
@@ -21,7 +28,7 @@ func (p *paths) siblings(parent, dname string) ([]Item, error) {
 	if err != nil {
 		return nil, fmt.Errorf("meta: siblings: %w", err)
 	}
-	return p.shownItems(out), nil
+	return p.shownItems(out)
 }
 
 func (p *paths) nameOf(it Item) (string, error) {
@@ -34,12 +41,8 @@ func (p *paths) nameOf(it Item) (string, error) {
 }
 
 func (s *Store) LastPath(id string) (string, error) {
-	root, _, err := s.GetState(StateRootID)
-	if err != nil {
-		return "", err
-	}
 	var parts []string
-	for depth := 0; id != root && id != "" && depth < maxDepthWalked; depth++ {
+	for depth := 0; id != TopID && id != "" && depth < maxDepthWalked; depth++ {
 		it, err := s.ByID(id)
 		if errors.Is(err, ErrNotFound) {
 			break
@@ -70,6 +73,9 @@ var siblingsNamed = `SELECT ` + itemCols + ` FROM items
 	WHERE parent = ? AND dname = ? AND shown_as != '' AND ` + shown
 
 func (s *Store) Children(parent string) ([]Entry, error) {
+	if parent == SharedWithMeID {
+		return s.sharedChildren()
+	}
 
 	tx, err := s.r.Begin()
 	if err != nil {
@@ -95,7 +101,13 @@ func (s *Store) Children(parent string) ([]Entry, error) {
 			return nil, err
 		}
 	}
-	all = p.shownItems(all)
+	if all, err = p.shownItems(all); err != nil {
+		return nil, err
+	}
+	return p.entries(all), nil
+}
+
+func (p *paths) entries(all []Item) []Entry {
 	out := make([]Entry, len(all))
 	for i, it := range all {
 		out[i] = Entry{Item: it, Display: it.shownAs}
@@ -104,7 +116,7 @@ func (s *Store) Children(parent string) ([]Entry, error) {
 			out[i].Link, _ = p.link(it)
 		}
 	}
-	return out, nil
+	return out
 }
 
 var betweenListingReads func()
@@ -112,6 +124,9 @@ var betweenListingReads func()
 func (s *Store) Lookup(parent, name string) (Item, error) {
 	if name == "" {
 		return Item{}, ErrNotFound
+	}
+	if parent == SharedWithMeID {
+		return s.sharedLookup(name)
 	}
 	p := s.paths()
 	rows, err := p.q.Query(`SELECT `+itemCols+` FROM items WHERE parent = ? AND shown_as = ? AND `+shown, parent, name)
@@ -122,7 +137,10 @@ func (s *Store) Lookup(parent, name string) (Item, error) {
 	if err != nil {
 		return Item{}, fmt.Errorf("meta: lookup: %w", err)
 	}
-	if found = p.shownItems(found); len(found) > 0 {
+	if found, err = p.shownItems(found); err != nil {
+		return Item{}, err
+	}
+	if len(found) > 0 {
 		return found[0], nil
 	}
 	return Item{}, ErrNotFound

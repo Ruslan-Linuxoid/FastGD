@@ -69,7 +69,7 @@ func TestBusyAnswersUndoAChangeAfterFiveMoreTries(t *testing.T) {
 	for i, wait := range retryWaits() {
 		requireBackoffStep(t, env, i, wait)
 	}
-	if names := env.Names(""); len(names) != 1 || names[0] != lostDir {
+	if names := env.Names(""); len(names) != 0 || !hasLost(env) {
 		t.Fatalf("after the sixth answer the root holds %q, want Lost and Found alone", names)
 	}
 	requireShelved(t, env, "", "busy", ".txt", content)

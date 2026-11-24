@@ -195,7 +195,11 @@ func (m *signedIn) revoked(t *testing.T) []string {
 
 func (m *signedIn) write(t *testing.T, name string) {
 	t.Helper()
-	_, fh, err := m.fs.Create(uint64(meta.RootIno), name, 1)
+	md, err := m.fs.Lookup(uint64(meta.RootIno), meta.MyDriveName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, fh, err := m.fs.Create(md.Ino, name, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

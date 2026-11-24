@@ -1,6 +1,10 @@
 package meta
 
-const schemaVersion = 25
+const schemaVersion = 27
+
+const schemaV26 = 26
+
+const schemaV25 = 25
 
 const schemaV24 = 24
 
@@ -85,6 +89,7 @@ CREATE TABLE IF NOT EXISTS items (
 	rev          TEXT NOT NULL DEFAULT '',
 	lost         INTEGER NOT NULL DEFAULT 0,
 	service      INTEGER NOT NULL DEFAULT 0,
+	shared       INTEGER NOT NULL DEFAULT 0,
 	note_for     INTEGER NOT NULL DEFAULT 0,
 	shown_as     TEXT NOT NULL DEFAULT ''
 );
@@ -115,6 +120,9 @@ CREATE INDEX IF NOT EXISTS items_target ON items(target) WHERE target != '';
 CREATE INDEX IF NOT EXISTS items_dirty ON items(id) WHERE dirty = 1;
 
 CREATE INDEX IF NOT EXISTS items_dirs ON items(parent) WHERE kind = 1;
+
+-- The items of the collection Shared with me, which its list reads.
+CREATE INDEX IF NOT EXISTS items_shared ON items(id) WHERE shared = 1;
 
 CREATE TABLE IF NOT EXISTS pieces (
 	ino   INTEGER NOT NULL,

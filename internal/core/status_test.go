@@ -72,7 +72,7 @@ func requireFailingShownBesideDaemon(t *testing.T, env *testenv.Env, ro *meta.Re
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(st.Failing) != 1 || st.Failing[0].Path != "stuck.txt" || st.Failing[0].LastError == "" ||
+	if len(st.Failing) != 1 || st.Failing[0].Path != "My Drive/stuck.txt" || st.Failing[0].LastError == "" ||
 		st.Failing[0].NextTry.IsZero() {
 		t.Fatalf("failing: %+v", st.Failing)
 	}

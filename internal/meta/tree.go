@@ -17,7 +17,7 @@ func (s *Store) Depth(id string, limit int) (int, error) {
 	return scalar[int](s.r, "depth of "+id, `WITH RECURSIVE up(id, n) AS (
 			SELECT ?, 0
 			UNION ALL SELECT items.parent, up.n + 1 FROM items JOIN up ON items.id = up.id
-				WHERE items.parent != '' AND up.n <= ?
+				WHERE items.parent != '' AND items.parent NOT LIKE ':%' AND up.n <= ?
 		) SELECT max(n) FROM up`, id, limit)
 }
 
@@ -26,7 +26,7 @@ func (s *Store) Height(id string, limit int) (int, error) {
 }
 
 func (s *Store) InDrive() ([]string, error) {
-	rows, err := s.r.Query(`SELECT id FROM items WHERE r_exists = 1 AND trashed = 0`)
+	rows, err := s.r.Query(`SELECT id FROM items WHERE r_exists = 1 AND trashed = 0 AND service = 0`)
 	if err != nil {
 		return nil, fmt.Errorf("meta: items in Drive: %w", err)
 	}

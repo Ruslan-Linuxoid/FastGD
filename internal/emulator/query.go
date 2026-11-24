@@ -32,8 +32,7 @@ func (e *Emulator) lookup(r *http.Request) (string, found) {
 
 		a.content, a.google = f.Content, f.isGoogleType()
 		a.forbidden = f.CannotDownload
-
-		a.abusive = f.abuseRefused(r.URL.Query().Get("acknowledgeAbuse") == "true")
+		a.abusive = f.abuseRefused(flag(r.URL.Query(), "acknowledgeAbuse"))
 	}
 	a.overQuota = e.overQuota(id)
 	return id, a
@@ -64,12 +63,12 @@ func listStart(w http.ResponseWriter, q url.Values) (int, bool) {
 	return n, true
 }
 
-func (e *Emulator) listFrom(start, size int, onlyLive bool) *drive.FileList {
+func (e *Emulator) listFrom(start, size int, onlyLive, allDrives bool) *drive.FileList {
 	out := &drive.FileList{Kind: "drive#fileList", Files: []*drive.File{}}
 	i := start
 	for ; i < len(e.order) && len(out.Files) < size; i++ {
 		f := e.files[e.order[i]]
-		if f == nil || f.ID == e.root || (onlyLive && e.trashed(f)) {
+		if !e.listed(f, onlyLive, allDrives) {
 			continue
 		}
 		out.Files = append(out.Files, e.apiFile(f))
@@ -78,4 +77,8 @@ func (e *Emulator) listFrom(start, size int, onlyLive bool) *drive.FileList {
 		out.NextPageToken = strconv.Itoa(i)
 	}
 	return out
+}
+
+func (e *Emulator) listed(f *File, onlyLive, allDrives bool) bool {
+	return f != nil && f.ID != e.root && !f.driveRoot && (!onlyLive || !e.trashed(f)) && (f.DriveID == "" || allDrives)
 }

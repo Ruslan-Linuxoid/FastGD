@@ -50,7 +50,7 @@ func (c *Client) startSession(
 	if err != nil {
 		return "", fmt.Errorf("drive: %s: %w", what, err)
 	}
-	q := url.Values{"uploadType": {"resumable"}, "fields": {fileFields}}
+	q := url.Values{"uploadType": {"resumable"}, "fields": {fileFields}, "supportsAllDrives": {"true"}}
 	req, err := http.NewRequestWithContext(ctx, method, c.uploadBase+path+"?"+q.Encode(), bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("drive: %s: %w", what, err)

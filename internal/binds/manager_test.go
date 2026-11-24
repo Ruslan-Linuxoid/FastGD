@@ -73,10 +73,10 @@ func TestAnAddedFolderIsBoundAtOnce(t *testing.T) {
 	s := newStand(t)
 	b := &fakeBinder{}
 	m := s.manager(t, true, b)
-	if got, err := m.Add("Work/Docs", s.place("docs")); err != nil || got != binds.AddedBound {
+	if got, err := m.Add("My Drive/Work/Docs", s.place("docs")); err != nil || got != binds.AddedBound {
 		t.Fatalf("add: %q, %v", got, err)
 	}
-	if len(b.bound) != 1 || b.bound[0] != [2]string{filepath.Join(s.mnt, "Work/Docs"), s.place("docs")} {
+	if len(b.bound) != 1 || b.bound[0] != [2]string{filepath.Join(s.mnt, "My Drive/Work/Docs"), s.place("docs")} {
 		t.Fatalf("the helper was asked %q", b.bound)
 	}
 	requireRows(t, s.dir, binds.Row{Folder: s.docs, Target: s.place("docs"), State: binds.Bound})
@@ -86,7 +86,7 @@ func TestAFolderAddedWithoutTheHelperIsBoundAtTheNextStart(t *testing.T) {
 	t.Parallel()
 	s := newStand(t)
 	m := s.manager(t, true, nil)
-	if got, err := m.Add("Work", s.place("work")); err != nil || got != binds.AddedPending {
+	if got, err := m.Add("My Drive/Work", s.place("work")); err != nil || got != binds.AddedPending {
 		t.Fatalf("add: %q, %v", got, err)
 	}
 	requireRows(t, s.dir, binds.Row{Folder: s.work, Target: s.place("work"), State: binds.Pending})
@@ -103,26 +103,26 @@ func TestMountAddRefuses(t *testing.T) {
 	s := newStand(t)
 	b := &fakeBinder{}
 	m := s.manager(t, true, b)
-	if _, err := m.Add("Work", s.place("work")); err != nil {
+	if _, err := m.Add("My Drive/Work", s.place("work")); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.MkdirAll(s.place("full/x"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, c := range []struct{ path, target string }{
-		{"Work/Docs/a.txt", s.place("a")},
-		{"Work/None", s.place("none")},
-		{"Work/Docs", s.place("full")},
-		{"Work/Docs", s.place("no/such")},
-		{"Work/Docs", filepath.Join(s.mnt, "in")},
-		{"Work/Docs", s.place("work")},
-		{"Work/Docs", s.place("work/in")},
+		{"My Drive/Work/Docs/a.txt", s.place("a")},
+		{"My Drive/Work/None", s.place("none")},
+		{"My Drive/Work/Docs", s.place("full")},
+		{"My Drive/Work/Docs", s.place("no/such")},
+		{"My Drive/Work/Docs", filepath.Join(s.mnt, "in")},
+		{"My Drive/Work/Docs", s.place("work")},
+		{"My Drive/Work/Docs", s.place("work/in")},
 	} {
 		if _, err := m.Add(c.path, c.target); err == nil {
 			t.Fatalf("%s was added at %s", c.path, c.target)
 		}
 	}
-	if _, err := s.manager(t, false, nil).Add("Work/Docs", s.place("docs")); !errors.Is(err, binds.ErrNoRoot) {
+	if _, err := s.manager(t, false, nil).Add("My Drive/Work/Docs", s.place("docs")); !errors.Is(err, binds.ErrNoRoot) {
 		t.Fatalf("a daemon without root answered %v", err)
 	}
 	if len(b.bound) != 1 {
@@ -135,7 +135,7 @@ func TestABindingGoneIsBoundAgain(t *testing.T) {
 	s := newStand(t)
 	b := &fakeBinder{}
 	m := s.manager(t, true, b)
-	if _, err := m.Add("Work", s.place("work")); err != nil {
+	if _, err := m.Add("My Drive/Work", s.place("work")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -149,13 +149,14 @@ func TestAMovedFolderStaysInTheList(t *testing.T) {
 	t.Parallel()
 	s := newStand(t)
 	m := s.manager(t, true, &fakeBinder{})
-	if _, err := m.Add("Work/Docs", s.place("docs")); err != nil {
+	if _, err := m.Add("My Drive/Work/Docs", s.place("docs")); err != nil {
 		t.Fatal(err)
 	}
 	s.env.Emu.Update(s.docs, func(f *emulator.File) { f.Name, f.Parents = "Papers", []string{s.env.Emu.Root()} })
 	poll(t, s.env)
 	m.Tick()
-	if got, err := m.List(); err != nil || len(got) != 1 || got[0].Path != "Papers" || got[0].State != binds.Bound {
+	if got, err := m.List(); err != nil || len(got) != 1 || got[0].Path != "My Drive/Papers" ||
+		got[0].State != binds.Bound {
 		t.Fatalf("the list is %+v, %v", got, err)
 	}
 }
@@ -178,7 +179,7 @@ func TestTheBindingOfAFolderGoneIsIgnored(t *testing.T) {
 			t.Parallel()
 			s := newStand(t)
 			m := s.manager(t, true, &fakeBinder{})
-			if _, err := m.Add("Work/Docs", s.place("docs")); err != nil {
+			if _, err := m.Add("My Drive/Work/Docs", s.place("docs")); err != nil {
 				t.Fatal(err)
 			}
 			c.gone(s.env.Emu, s.docs)
@@ -200,7 +201,7 @@ func TestMountRemoveTakesTheRowOff(t *testing.T) {
 	t.Parallel()
 	s := newStand(t)
 	m := s.manager(t, true, &fakeBinder{})
-	if _, err := m.Add("Work", s.place("work")); err != nil {
+	if _, err := m.Add("My Drive/Work", s.place("work")); err != nil {
 		t.Fatal(err)
 	}
 	if err := m.Remove(s.place("work") + "/"); err != nil {

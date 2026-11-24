@@ -58,6 +58,8 @@ type FS struct {
 
 	upMeter speed.Meter
 
+	refusals *refusals
+
 	noLogin atomic.Bool
 
 	retries retries

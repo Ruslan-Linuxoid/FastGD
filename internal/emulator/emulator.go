@@ -50,9 +50,13 @@ type Request struct {
 type Emulator struct {
 	mu    sync.Mutex
 	clock clock.Clock
-	rng   *rand.Rand
-	root  string
-	files map[string]*File
+
+	contentDir string
+	mappedMu   sync.Mutex
+	mapped     map[*byte]bool
+	rng        *rand.Rand
+	root       string
+	files      map[string]*File
 
 	order []string
 

@@ -70,7 +70,7 @@ func TestRestartCatchesUpAtOnce(t *testing.T) {
 
 	d.start()
 	waitFor(t, "the change made while down", 5*time.Second, func() bool {
-		return slices.Equal(dirNames(t, d.mnt), []string{"while-down.txt"})
+		return slices.Equal(dirNames(t, d.myDrive()), []string{"while-down.txt"})
 	})
 }
 

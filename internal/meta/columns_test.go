@@ -36,7 +36,7 @@ func TestItemColumnsAreThoseOfTheTable(t *testing.T) {
 func TestColumnsOfDriveAreListed(t *testing.T) {
 	t.Parallel()
 	want := "mime, md5, version, r_exists, r_md5, r_version, r_name, r_parent, r_trashed, r_mtime, " +
-		"denied, create_tried, rev"
+		"denied, create_tried, rev, shared"
 	if driveCols != want {
 		t.Fatalf("the columns of Drive are\n%s\nwant\n%s", driveCols, want)
 	}

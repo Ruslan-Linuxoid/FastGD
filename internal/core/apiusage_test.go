@@ -69,7 +69,7 @@ func TestDownloadQuotaOfAFileFailsAtOnceAndShows(t *testing.T) {
 		t.Fatalf("another file reads %q", got)
 	}
 	st := readStatus(t, env)
-	if !st.DownloadRefused.Equal(env.Clock.Now()) || st.RefusedPath != "f.bin" {
+	if !st.DownloadRefused.Equal(env.Clock.Now()) || st.RefusedPath != "My Drive/f.bin" {
 		t.Fatalf("status shows the refusal as %v on %q", st.DownloadRefused, st.RefusedPath)
 	}
 	if len(env.Logs("download quota")) == 0 {
@@ -77,7 +77,7 @@ func TestDownloadQuotaOfAFileFailsAtOnceAndShows(t *testing.T) {
 	}
 
 	env.Restart()
-	if st := readStatus(t, env); st.RefusedPath != "f.bin" {
+	if st := readStatus(t, env); st.RefusedPath != "My Drive/f.bin" {
 		t.Fatalf("after a restart status shows the refusal on %q", st.RefusedPath)
 	}
 	env.Emu.SetFileDownloadQuotaExceeded(id, false)
@@ -104,7 +104,7 @@ func TestDownloadQuotaOfTheAccountLeavesCachedFilesReadable(t *testing.T) {
 	if got := readAll(t, env, "cached.bin"); !bytes.Equal(got, cached) {
 		t.Fatal("a cached file reads different under the account's download quota")
 	}
-	if st := readStatus(t, env); st.RefusedPath != "cold.bin" {
+	if st := readStatus(t, env); st.RefusedPath != "My Drive/cold.bin" {
 		t.Fatalf("status shows the refusal on %q", st.RefusedPath)
 	}
 }

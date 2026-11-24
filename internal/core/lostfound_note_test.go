@@ -20,7 +20,7 @@ func TestNoteTellsWhereAConflictCameFrom(t *testing.T) {
 	poll(t, env)
 	as := requireShelved(t, env, "Отчёты/2026", "a", ".odt", local)
 	text := requireNote(t, env, lostDir+"/Отчёты/2026", as)
-	for _, want := range []string{"Лежал в Drive: Отчёты/2026/a.odt\n",
+	for _, want := range []string{"Лежал в Drive: My Drive/Отчёты/2026/a.odt\n",
 		"Попал сюда: " + testenv.Epoch().Local().Format("2006-01-02"),
 		"Причина: " + "файл изменён здесь, а в Drive за это время появилась другая его версия"} {
 		if !strings.Contains(text, want) {
@@ -53,7 +53,7 @@ func TestNoteTellsWhatDriveAnsweredToAChangeItUndid(t *testing.T) {
 	rounds(env, 5)
 	as := requireShelved(t, env, "", "bad", ".txt", bad)
 	text := requireNote(t, env, lostDir, as)
-	if !strings.Contains(text, "Лежал в Drive: bad.txt\n") || !strings.Contains(text,
+	if !strings.Contains(text, "Лежал в Drive: My Drive/bad.txt\n") || !strings.Contains(text,
 		"Причина: Drive не принял создание файла: ") || !strings.Contains(text, "400") {
 		t.Fatalf("the note says %q, want the path and Drive's answer", text)
 	}

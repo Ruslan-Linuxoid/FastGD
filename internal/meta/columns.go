@@ -48,6 +48,7 @@ var itemColumns = []itemColumn{
 	{"rev", true, func(it *Item) any { return &it.Rev }},
 	{"lost", false, func(it *Item) any { return &it.Lost }},
 	{"service", false, func(it *Item) any { return &it.Service }},
+	{"shared", true, func(it *Item) any { return &it.Shared }},
 	{"note_for", false, nil},
 	{"shown_as", false, func(it *Item) any { return &it.shownAs }},
 }

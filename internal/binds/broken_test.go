@@ -17,7 +17,7 @@ func TestABrokenListBindsNothingAndSaysSo(t *testing.T) {
 	b := &fakeBinder{}
 	m := s.manager(t, true, b)
 	m.Tick()
-	_, addErr := m.Add("Work", s.place("work"))
+	_, addErr := m.Add("My Drive/Work", s.place("work"))
 	_, listErr := m.List()
 	removeErr := m.Remove(s.place("work"))
 	for name, err := range map[string]error{"add": addErr, "list": listErr, "remove": removeErr} {

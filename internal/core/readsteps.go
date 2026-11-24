@@ -10,15 +10,15 @@ import (
 	"github.com/Ruslan-Linuxoid/FastGD/internal/meta"
 )
 
-func openAllowed(it meta.Item, flags uint32, writer bool) error {
+func (f *FS) openAllowed(it meta.Item, flags uint32, writer bool) error {
 	if writer && it.Denied.Has(meta.DenyModify) {
-		return syscall.EACCES
+		return f.lacksRight("change the file", it, "canModifyContent")
 	}
 
 	whole := it.ContentLocal() && it.Base == 0
 	anew := flags&syscall.O_ACCMODE == syscall.O_WRONLY && flags&syscall.O_TRUNC != 0
 	if it.Denied.Has(meta.DenyDownload) && !whole && !anew {
-		return syscall.EACCES
+		return f.lacksRight("download the file", it, "canDownload")
 	}
 	return nil
 }

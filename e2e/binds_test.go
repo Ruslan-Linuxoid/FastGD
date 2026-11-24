@@ -93,13 +93,13 @@ func TestBindingsFollowTheirFolders(t *testing.T) {
 	d := newDaemon(t, e)
 	d.start()
 	at := places(t, d)
-	if out := d.mustMount("add", "Work/Docs", at+"/docs"); !strings.Contains(out, "next start") {
+	if out := d.mustMount("add", "My Drive/Work/Docs", at+"/docs"); !strings.Contains(out, "next start") {
 		t.Fatalf("mount add into an empty list said %q", out)
 	}
 	d.stop()
 	d.start()
 	requireA(t, at+"/docs/a.txt")
-	if out := d.mustMount("add", "Work", at+"/work"); strings.TrimSpace(out) != "bound" {
+	if out := d.mustMount("add", "My Drive/Work", at+"/work"); strings.TrimSpace(out) != "bound" {
 		t.Fatalf("mount add said %q", out)
 	}
 	requireA(t, at+"/work/Docs/a.txt")
@@ -131,7 +131,7 @@ func TestTheBindingsOfAKilledDaemonComeBack(t *testing.T) {
 	d := newDaemon(t, e)
 	d.start()
 	at := places(t, d)
-	d.mustMount("add", "Work/Docs", at+"/docs")
+	d.mustMount("add", "My Drive/Work/Docs", at+"/docs")
 	d.stop()
 	d.start()
 	if err := d.cmd.Process.Kill(); err != nil {
@@ -151,7 +151,7 @@ func TestTheBindingOfAFolderInTheTrashIsIgnored(t *testing.T) {
 	d := newDaemon(t, e)
 	d.start()
 	at := places(t, d)
-	d.mustMount("add", "Work/Docs", at+"/docs")
+	d.mustMount("add", "My Drive/Work/Docs", at+"/docs")
 	d.stop()
 	d.start()
 	requireA(t, at+"/docs/a.txt")
@@ -184,7 +184,7 @@ func TestOnlyTheHelperKeepsRoot(t *testing.T) {
 	d.start()
 	requireUser(t, d.cmd.Process.Pid, daemonUID)
 	at := places(t, d)
-	d.mustMount("add", "Work/Docs", at+"/docs")
+	d.mustMount("add", "My Drive/Work/Docs", at+"/docs")
 	d.stop()
 	d.start()
 	requireA(t, at+"/docs/a.txt")
@@ -194,7 +194,7 @@ func TestOnlyTheHelperKeepsRoot(t *testing.T) {
 		t.Fatalf("the daemon runs %v", kids)
 	}
 	requireUser(t, kids[0], 0)
-	d.mustMount("add", "Work", at+"/work")
+	d.mustMount("add", "My Drive/Work", at+"/work")
 	requireA(t, at+"/work/Docs/a.txt")
 
 	if err := syscall.Kill(kids[0], syscall.SIGTERM); err != nil {

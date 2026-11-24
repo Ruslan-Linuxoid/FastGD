@@ -56,7 +56,7 @@ func (b *idleBody) Read(p []byte) (int, error) {
 func (c *Client) Stream(ctx context.Context, id string, off, length int64, sink func([]byte) error) error {
 	return c.stream(ctx, id, off, length, sink, func(ctx context.Context, rng string) (*http.Response, error) {
 
-		call := c.svc.Files.Get(id).AcknowledgeAbuse(true).Context(ctx)
+		call := c.svc.Files.Get(id).AcknowledgeAbuse(true).SupportsAllDrives(true).Context(ctx)
 		call.Header().Set("Range", rng)
 		return call.Download()
 	})

@@ -64,6 +64,9 @@ func (f *FS) applyChanges(ctx context.Context, changes []drive.Change, next stri
 		ids:   make([]string, 0, len(changes)),
 	}
 	for _, ch := range changes {
+		if ch.Drive != nil {
+			ch = driveRootChange(ch)
+		}
 		if ch.FileID == rootID {
 			continue
 		}

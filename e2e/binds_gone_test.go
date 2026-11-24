@@ -24,7 +24,7 @@ func TestTheBindingOfAFolderGoneIsIgnored(t *testing.T) {
 			d := newDaemon(t, e)
 			d.start()
 			at := places(t, d)
-			d.mustMount("add", "Work/Docs", at+"/docs")
+			d.mustMount("add", "My Drive/Work/Docs", at+"/docs")
 			d.stop()
 			d.start()
 			requireA(t, at+"/docs/a.txt")

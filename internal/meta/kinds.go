@@ -116,6 +116,7 @@ const (
 	DenyAddChildren
 	DenyRemoveChildren
 	DenyDownload
+	DenyOutOfDrive
 )
 
 func (d Denied) Has(r Denied) bool { return d&r == r }

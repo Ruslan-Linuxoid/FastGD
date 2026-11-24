@@ -98,7 +98,7 @@ func (f *FS) openOnce(ctx context.Context, ino uint64, flags uint32) (uint64, er
 
 func (f *FS) open(ctx context.Context, it meta.Item, gen uint64, flags uint32) (uint64, error) {
 	writer := isWrite(flags) || flags&syscall.O_TRUNC != 0
-	if err := openAllowed(it, flags, writer); err != nil {
+	if err := f.openAllowed(it, flags, writer); err != nil {
 		return 0, err
 	}
 	file := f.edits.FileOf(it)

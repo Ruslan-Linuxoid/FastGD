@@ -65,6 +65,10 @@ func (e *Emulator) startSession(w http.ResponseWriter, r *http.Request, s *sessi
 		return
 	}
 	s.size = size
+
+	if e.contentDir != "" {
+		s.data = e.room(size)
+	}
 	if s.create && s.meta.MimeType == "" {
 		s.meta.MimeType = r.Header.Get("X-Upload-Content-Type")
 	}
@@ -141,7 +145,7 @@ func (e *Emulator) readChunk(r *http.Request) ([]byte, bool) {
 	}
 	e.mu.Unlock()
 
-	body := make([]byte, 0, max(r.ContentLength, 0))
+	body := e.room(max(r.ContentLength, 0))
 	buf := make([]byte, chunkRead)
 	for {
 		want := len(buf)

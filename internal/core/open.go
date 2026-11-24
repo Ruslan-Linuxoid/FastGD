@@ -115,6 +115,7 @@ func newFS(opt Options, store *meta.Store) (*FS, error) {
 		pollMu:    make(pollLock, 1),
 		queue:     newQueue(store, opt.Log),
 		shown:     newShown(store, opt.Log),
+		refusals:  newRefusals(),
 		sent:      map[meta.Ino]sent{},
 		idsWanted: make(chan struct{}, 1),
 	}

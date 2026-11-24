@@ -68,7 +68,7 @@ func TestMetadataWithDriveDown(t *testing.T) {
 	if err != nil || fi.Size() != 5 {
 		t.Fatalf("stat: %v, %v", fi, err)
 	}
-	out, err := exec.CommandContext(t.Context(), "find", d.mnt, "-mindepth", "1").Output()
+	out, err := exec.CommandContext(t.Context(), "find", d.myDrive(), "-mindepth", "1").Output()
 	if lines := strings.Split(strings.TrimSpace(string(out)), "\n"); err != nil || len(lines) < 2 ||
 		lines[1] != d.path("dir/f.txt") {
 		t.Fatalf("find: %v\n%s", err, out)
@@ -121,7 +121,7 @@ func TestRestartMountsFromDatabase(t *testing.T) {
 
 	e.ResetRequests()
 	d.start()
-	if got := dirNames(t, d.mnt); !slices.Equal(got, []string{"f.txt"}) {
+	if got := dirNames(t, d.myDrive()); !slices.Equal(got, []string{"f.txt"}) {
 		t.Fatalf("root lists %q", got)
 	}
 	for _, r := range e.Requests() {
@@ -144,7 +144,7 @@ func TestRestartAfterKillClearsDeadMount(t *testing.T) {
 		t.Fatalf("after kill -9 the mount point gives %v, want ENOTCONN", err)
 	}
 	d.start()
-	if got := dirNames(t, d.mnt); !slices.Equal(got, []string{"f.txt"}) {
+	if got := dirNames(t, d.myDrive()); !slices.Equal(got, []string{"f.txt"}) {
 		t.Fatalf("root lists %q", got)
 	}
 	d.stop()
@@ -159,7 +159,7 @@ func TestSecondDaemonOnLiveMountRefuses(t *testing.T) {
 	if err == nil || !strings.Contains(string(out), "already mounted") {
 		t.Fatalf("second daemon: %v\n%s", err, out)
 	}
-	if got := dirNames(t, d.mnt); len(got) != 0 {
+	if got := dirNames(t, d.myDrive()); len(got) != 0 {
 		t.Fatalf("first mount lists %q", got)
 	}
 }

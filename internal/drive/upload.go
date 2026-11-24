@@ -73,7 +73,7 @@ func exists(err error) bool {
 
 func (c *Client) CreateFolder(ctx context.Context, id, name, parent string, modified time.Time) (*File, error) {
 	f, err := get(ctx, c, costWrite, func() (*drive.File, error) {
-		return c.svc.Files.Create(newItem(id, name, parent, MimeFolder, modified)).
+		return c.svc.Files.Create(newItem(id, name, parent, MimeFolder, modified)).SupportsAllDrives(true).
 			Fields(fileFields).Context(ctx).Do()
 	})
 	return stored(f, err, "create folder "+id)
@@ -109,7 +109,7 @@ func (c *Client) uploadWhole(
 	head := "--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + string(meta) +
 		"\r\n--" + boundary + "\r\nContent-Type: " + mimeType + "\r\n\r\n"
 	tail := "\r\n--" + boundary + "--\r\n"
-	q := url.Values{"uploadType": {"multipart"}, "fields": {fileFields}}
+	q := url.Values{"uploadType": {"multipart"}, "fields": {fileFields}, "supportsAllDrives": {"true"}}
 	return get(ctx, c, costUpload, func() (*drive.File, error) {
 		media := &contentReader{r: c.throttled(ctx, content())}
 		req, err := http.NewRequestWithContext(ctx, method, c.uploadBase+at+"?"+q.Encode(),

@@ -11,6 +11,8 @@ import (
 type change struct {
 	id      string
 	removed bool
+
+	drive bool
 }
 
 func (e *Emulator) Update(id string, fn func(*File)) {
@@ -49,9 +51,9 @@ func (e *Emulator) handleChanges(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-
-	myDrive := q.Get("restrictToMyDrive") == "true"
+	myDrive := flag(q, "restrictToMyDrive")
 	withRemoved := q.Get("includeRemoved") != "false"
+	allDrives := allDrivesAsked(q)
 
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -59,7 +61,7 @@ func (e *Emulator) handleChanges(w http.ResponseWriter, r *http.Request) {
 	now := formatTime(e.now())
 	i := tok - 1
 	for ; i < len(e.changes) && len(out.Changes) < size; i++ {
-		if ch := e.changeEntry(e.changes[i], myDrive, withRemoved, now); ch != nil {
+		if ch := e.changeEntry(e.changes[i], listing{myDrive, withRemoved, allDrives}, now); ch != nil {
 			out.Changes = append(out.Changes, ch)
 		}
 	}
@@ -71,29 +73,42 @@ func (e *Emulator) handleChanges(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, out)
 }
 
-func (e *Emulator) changeEntry(c change, myDrive, withRemoved bool, now string) *drive.Change {
+type listing struct{ myDrive, withRemoved, allDrives bool }
+
+func (e *Emulator) changeEntry(c change, l listing, now string) *drive.Change {
+	if c.drive {
+		return e.driveChange(c, l, now)
+	}
 	f, ok := e.files[c.id]
 	if c.removed || !ok {
-		if !withRemoved {
+		if !l.withRemoved {
 			return nil
 		}
 		return removedChange(c.id, now)
 	}
-	if myDrive && len(f.Parents) == 0 {
-		switch e.parentless {
-		case ParentlessLeftOut:
-
-			return nil
-		case ParentlessRemoved:
-			return removedChange(c.id, now)
-		case ParentlessShown:
-		}
+	if f.DriveID != "" && (!l.allDrives || l.myDrive) {
+		return nil
 	}
-	return &drive.Change{Kind: "drive#change", ChangeType: "file", FileId: c.id, File: e.apiFile(f), Time: now}
+	if l.myDrive && len(f.Parents) == 0 {
+		return e.parentlessEntry(f, now)
+	}
+	return &drive.Change{Kind: changeKind, ChangeType: fileChange, FileId: c.id, File: e.apiFile(f), Time: now}
+}
+
+func (e *Emulator) parentlessEntry(f *File, now string) *drive.Change {
+	switch e.parentless {
+	case ParentlessLeftOut:
+
+		return nil
+	case ParentlessRemoved:
+		return removedChange(f.ID, now)
+	case ParentlessShown:
+	}
+	return &drive.Change{Kind: changeKind, ChangeType: fileChange, FileId: f.ID, File: e.apiFile(f), Time: now}
 }
 
 func removedChange(id, now string) *drive.Change {
-	return &drive.Change{Kind: "drive#change", ChangeType: "file", FileId: id, Removed: true, Time: now}
+	return &drive.Change{Kind: changeKind, ChangeType: fileChange, FileId: id, Removed: true, Time: now}
 }
 
 type Parentless int

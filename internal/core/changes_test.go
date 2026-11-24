@@ -97,16 +97,25 @@ func TestChangesTokenSurvivesRestart(t *testing.T) {
 	}
 }
 
-func TestChangesAskOnlyForMyDrive(t *testing.T) {
+func TestChangesAskForEveryDrive(t *testing.T) {
 	t.Parallel()
 	env := testenv.New(t)
 	env.Start()
 	env.Emu.ResetRequests()
 	poll(t, env)
+	asked := false
 	for _, r := range env.Emu.Requests() {
-		if r.Path == "/drive/v3/changes" && r.Query.Get("restrictToMyDrive") != "true" {
-			t.Fatalf("changes asked beyond My Drive: %v", r.Query)
+		if r.Path != "/drive/v3/changes" {
+			continue
 		}
+		asked = true
+		if q := r.Query; q.Get("includeItemsFromAllDrives") != "true" || q.Get("supportsAllDrives") != "true" ||
+			q.Get("restrictToMyDrive") == "true" {
+			t.Fatalf("changes asked for not every drive: %v", q)
+		}
+	}
+	if !asked {
+		t.Fatal("the poll asked for no changes")
 	}
 }
 

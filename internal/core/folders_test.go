@@ -18,22 +18,27 @@ func TestAPathNamesItsFolder(t *testing.T) {
 	docs := env.Emu.Mkdir(work, "Docs")
 	env.Emu.WriteFile(docs, "a.txt", []byte("a"))
 	env.Start()
-	for path, want := range map[string]string{"Work/Docs": docs, "/Work/": work, "": env.Emu.Root(),
-		meta.LostName: core.LostFolder} {
+	for path, want := range map[string]string{"My Drive/Work/Docs": docs, "/My Drive/Work/": work,
+		meta.MyDriveName: env.Emu.Root(), meta.LostName: core.LostFolder} {
 		if id, err := env.FS.FolderAt(path); err != nil || id != want {
 			t.Fatalf("%q names %q, %v; want %q", path, id, err, want)
 		}
 	}
-	if _, err := env.FS.FolderAt("Work/Docs/a.txt"); !errors.Is(err, core.ErrNotFolder) {
+	if _, err := env.FS.FolderAt("My Drive/Work/Docs/a.txt"); !errors.Is(err, core.ErrNotFolder) {
 		t.Fatalf("a file names a folder: %v", err)
 	}
-	if _, err := env.FS.FolderAt("Work/None"); !errors.Is(err, syscall.ENOENT) {
+	for _, path := range []string{"", meta.SharedWithMeName} {
+		if _, err := env.FS.FolderAt(path); !errors.Is(err, core.ErrNotFolder) {
+			t.Fatalf("%q, a folder of the root of the mount, names a folder of Drive: %v", path, err)
+		}
+	}
+	if _, err := env.FS.FolderAt("My Drive/Work/None"); !errors.Is(err, syscall.ENOENT) {
 		t.Fatalf("a path the mount does not show: %v", err)
 	}
 	if _, err := env.FS.Mkdir(env.MustResolve("Work").Ino, "New"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := env.FS.FolderAt("Work/New"); !errors.Is(err, core.ErrNoFileID) {
+	if _, err := env.FS.FolderAt("My Drive/Work/New"); !errors.Is(err, core.ErrNoFileID) {
 		t.Fatalf("a folder Drive has not taken yet: %v", err)
 	}
 }
@@ -45,13 +50,13 @@ func TestAFolderIsFollowedByItsFileID(t *testing.T) {
 	docs := env.Emu.Mkdir(work, "Docs")
 	env.Start()
 	was, err := env.FS.Folder(docs)
-	if err != nil || was.Path != "Work/Docs" || was.Gone != "" {
+	if err != nil || was.Path != "My Drive/Work/Docs" || was.Gone != "" {
 		t.Fatalf("the folder is %+v, %v", was, err)
 	}
 	env.Emu.Update(docs, func(f *emulator.File) { f.Name, f.Parents = "Papers", []string{env.Emu.Root()} })
 	poll(t, env)
 	now, err := env.FS.Folder(docs)
-	if err != nil || now != (core.Folder{Path: "Papers", Ino: was.Ino}) {
+	if err != nil || now != (core.Folder{Path: "My Drive/Papers", Ino: was.Ino}) {
 		t.Fatalf("after the move the folder is %+v, %v; it was %+v", now, err, was)
 	}
 }

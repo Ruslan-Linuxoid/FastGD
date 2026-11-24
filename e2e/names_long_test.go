@@ -22,7 +22,7 @@ func TestLongNamesThroughTheKernel(t *testing.T) {
 	if err := syscall.Statfs(d.mnt, &st); err != nil || st.Namelen != 1024 {
 		t.Fatalf("statfs gives a name limit of %d: %v", st.Namelen, err)
 	}
-	names := dirNames(t, d.mnt)
+	names := dirNames(t, d.myDrive())
 	if !slices.Contains(names, cyrillic) {
 		t.Fatalf("the root does not list the %d byte name", len(cyrillic))
 	}

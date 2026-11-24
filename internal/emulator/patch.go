@@ -134,5 +134,18 @@ func (e *Emulator) setParents(w http.ResponseWriter, q url.Values, f *File) bool
 			f.Parents = append(f.Parents, p)
 		}
 	}
+	return e.moveDrive(w, f)
+}
+
+func (e *Emulator) moveDrive(w http.ResponseWriter, f *File) bool {
+	to := e.driveOf(f.Parents)
+	if to == f.DriveID {
+		return true
+	}
+	if f.CannotMoveOutOfDrive {
+		denied().write(w)
+		return false
+	}
+	f.DriveID = to
 	return true
 }

@@ -28,6 +28,7 @@ func (e *Emulator) takeChunk(w http.ResponseWriter, r *http.Request, s *session,
 	if !cut && int64(len(body)) != end-from {
 		writeError(w, http.StatusBadRequest, "badRequest",
 			fmt.Sprintf("the chunk carries %d bytes, its Content-Range names %d", len(body), end-from))
+		e.free(body)
 		return false
 	}
 	e.mu.Lock()
@@ -36,6 +37,7 @@ func (e *Emulator) takeChunk(w http.ResponseWriter, r *http.Request, s *session,
 		s.data = append(s.data, body[held-from:]...)
 	}
 	e.mu.Unlock()
+	e.free(body)
 	if cut {
 
 		panic(http.ErrAbortHandler)

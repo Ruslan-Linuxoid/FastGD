@@ -155,6 +155,11 @@ func (e *Env) Resolve(path string) (core.Attr, error) {
 	if err != nil {
 		return a, err
 	}
+	if top, ok := strings.CutPrefix(path, "/"); ok {
+		path = top
+	} else {
+		path = meta.MyDriveName + "/" + path
+	}
 	for part := range strings.SplitSeq(path, "/") {
 		if part == "" {
 			continue

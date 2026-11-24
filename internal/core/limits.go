@@ -145,14 +145,15 @@ func (f *FS) roomIn(parent meta.Item, levels int) error {
 	maxChildren, maxDepth := f.opt.MaxChildren, f.opt.MaxDepth
 
 	n := 0
-	if parent.Ino != meta.RootIno {
+	if !meta.IsVirtual(parent.Parent) {
 		var err error
 		if n, err = f.store.ChildCount(parent.ID, maxChildren); err != nil {
 			return f.eio("count the items of a folder", err, "id", parent.ID)
 		}
 	}
 	if n >= maxChildren {
-		f.log.Warn("a Drive folder holds no more items", "folder", parent.ID, "items", n, "limit", maxChildren)
+		f.warnRefused(refusal{id: parent.ID, right: "items"}, "a Drive folder holds no more items",
+			"folder", parent.ID, "items", n, "limit", maxChildren)
 		return syscall.ENOSPC
 	}
 	if levels == 0 {
@@ -163,7 +164,8 @@ func (f *FS) roomIn(parent meta.Item, levels int) error {
 		return f.eio("depth of a folder", err, "id", parent.ID)
 	}
 	if depth+levels > maxDepth {
-		f.log.Warn("Drive keeps folders no deeper", "folder", parent.ID, "depth", depth+levels, "limit", maxDepth)
+		f.warnRefused(refusal{id: parent.ID, right: "depth"}, "Drive keeps folders no deeper",
+			"folder", parent.ID, "depth", depth+levels, "limit", maxDepth)
 		return syscall.ENOSPC
 	}
 	return nil

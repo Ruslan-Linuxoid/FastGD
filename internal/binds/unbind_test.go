@@ -17,7 +17,7 @@ func TestMountRemoveUnbinds(t *testing.T) {
 	s := newStand(t)
 	b := &fakeBinder{}
 	m := s.manager(t, true, b)
-	if _, err := m.Add("Work", s.place("work")); err != nil {
+	if _, err := m.Add("My Drive/Work", s.place("work")); err != nil {
 		t.Fatal(err)
 	}
 	binds.SetOurs(m, everywhere)
@@ -35,7 +35,7 @@ func TestABindingThatDoesNotComeUndoneIsNotIgnoredYet(t *testing.T) {
 	s := newStand(t)
 	b := &fakeBinder{}
 	m := s.manager(t, true, b)
-	if _, err := m.Add("Work/Docs", s.place("docs")); err != nil {
+	if _, err := m.Add("My Drive/Work/Docs", s.place("docs")); err != nil {
 		t.Fatal(err)
 	}
 	binds.SetOurs(m, everywhere)
@@ -57,7 +57,7 @@ func TestMountRemoveTakesOffPendingAndIgnoredRows(t *testing.T) {
 	t.Parallel()
 	s := newStand(t)
 	waiting := s.manager(t, true, nil)
-	if _, err := waiting.Add("Work", s.place("work")); err != nil {
+	if _, err := waiting.Add("My Drive/Work", s.place("work")); err != nil {
 		t.Fatal(err)
 	}
 	if err := waiting.Remove(s.place("work")); err != nil {
@@ -67,7 +67,7 @@ func TestMountRemoveTakesOffPendingAndIgnoredRows(t *testing.T) {
 
 	b := &fakeBinder{}
 	m := s.manager(t, true, b)
-	if _, err := m.Add("Work/Docs", s.place("docs")); err != nil {
+	if _, err := m.Add("My Drive/Work/Docs", s.place("docs")); err != nil {
 		t.Fatal(err)
 	}
 	s.env.Emu.Delete(s.docs)

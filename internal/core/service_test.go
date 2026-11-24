@@ -193,7 +193,8 @@ func TestServiceFilesOfAFolderDeletedInDriveAreThrownAway(t *testing.T) {
 		t.Fatalf("Lost and Found holds %q of the deleted folder, want the draft alone", names)
 	}
 	var left int
-	if err := execSQLScan(env.Dir+"/meta.db", `SELECT count(*) FROM items WHERE service = 1`, &left); err != nil ||
+	if err := execSQLScan(env.Dir+"/meta.db", `SELECT count(*) FROM items WHERE service = 1 AND id NOT LIKE ':%'`,
+		&left); err != nil ||
 		left != 0 {
 		t.Fatalf("%d service items are left of the deleted folder, %v", left, err)
 	}

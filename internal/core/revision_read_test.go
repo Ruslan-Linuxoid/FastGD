@@ -211,7 +211,8 @@ func TestTheRightToReadRevisionsIsAskedWithTheRights(t *testing.T) {
 	asked := 0
 	for _, r := range env.Emu.Requests() {
 		fields := r.Query.Get("fields")
-		if !strings.Contains(fields, "capabilities(") {
+
+		if !strings.Contains(fields, "capabilities(") || r.Path == "/drive/v3/drives" {
 			continue
 		}
 		asked++

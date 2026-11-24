@@ -31,7 +31,7 @@ func setRoot(tb testing.TB, s *Store) {
 	if err := s.SetState(StateRootID, "root"); err != nil {
 		tb.Fatal(err)
 	}
-	if err := s.SetRoot("root", time.Unix(0, 0)); err != nil {
+	if err := s.SetTop("root", time.Unix(0, 0)); err != nil {
 		tb.Fatal(err)
 	}
 }
@@ -59,7 +59,7 @@ func TestByIDPathAndChildren(t *testing.T) {
 	requirePathsOfTheDeepFile(t, s)
 	requireTheDeepFileIsTheOnlyChild(t, s)
 	root, err := s.ByIno(RootIno)
-	if err != nil || root.ID != "root" {
+	if err != nil || root.ID != TopID {
 		t.Fatalf("ByIno(root) = %+v, %v", root, err)
 	}
 	if _, err := s.ByID("nope"); !errors.Is(err, ErrNotFound) {
@@ -69,10 +69,10 @@ func TestByIDPathAndChildren(t *testing.T) {
 
 func requirePathsOfTheDeepFile(t *testing.T, s *Store) {
 	t.Helper()
-	if p, err := s.Path("f1"); err != nil || p != "a/b/deep.txt" {
+	if p, err := s.Path("f1"); err != nil || p != "My Drive/a/b/deep.txt" {
 		t.Fatalf("Path = %q, %v", p, err)
 	}
-	if p, err := s.Path("root"); err != nil || p != "" {
+	if p, err := s.Path("root"); err != nil || p != MyDriveName {
 		t.Fatalf("Path(root) = %q, %v", p, err)
 	}
 }

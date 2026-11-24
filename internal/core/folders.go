@@ -34,10 +34,7 @@ func (f *FS) FolderAt(path string) (string, error) {
 	if path == meta.LostName {
 		return LostFolder, nil
 	}
-	id, _, err := f.store.GetState(meta.StateRootID)
-	if err != nil {
-		return "", err
-	}
+	id := meta.TopID
 	if path != "" {
 		for name := range strings.SplitSeq(path, "/") {
 			it, err := f.store.Lookup(id, name)
@@ -52,6 +49,10 @@ func (f *FS) FolderAt(path string) (string, error) {
 	}
 	if meta.IsLocalKey(id) {
 		return "", fmt.Errorf("%s: %w", path, ErrNoFileID)
+	}
+
+	if meta.IsVirtual(id) {
+		return "", fmt.Errorf("%s: %w", path, ErrNotFolder)
 	}
 	return id, nil
 }
@@ -78,11 +79,7 @@ func (f *FS) Folder(id string) (Folder, error) {
 }
 
 func (f *FS) lostFolder() (Folder, error) {
-	root, _, err := f.store.GetState(meta.StateRootID)
-	if err != nil {
-		return Folder{}, err
-	}
-	it, err := f.store.Lookup(root, meta.LostName)
+	it, err := f.store.Lookup(meta.TopID, meta.LostName)
 	if errors.Is(err, meta.ErrNotFound) {
 		return Folder{Path: meta.LostName}, nil
 	}

@@ -20,6 +20,7 @@ import (
 
 	"github.com/Ruslan-Linuxoid/FastGD/internal/config"
 	"github.com/Ruslan-Linuxoid/FastGD/internal/emulator"
+	"github.com/Ruslan-Linuxoid/FastGD/internal/meta"
 	"github.com/Ruslan-Linuxoid/FastGD/internal/mounts"
 )
 
@@ -243,7 +244,14 @@ func (d *daemon) cleanup() {
 	}
 }
 
-func (d *daemon) path(p string) string { return filepath.Join(d.mnt, p) }
+func (d *daemon) path(p string) string {
+	if top, ok := strings.CutPrefix(p, "/"); ok {
+		return filepath.Join(d.mnt, top)
+	}
+	return filepath.Join(d.mnt, meta.MyDriveName, p)
+}
+
+func (d *daemon) myDrive() string { return filepath.Join(d.mnt, meta.MyDriveName) }
 
 func mounted(dir string) bool {
 	types, err := mounts.At(dir)

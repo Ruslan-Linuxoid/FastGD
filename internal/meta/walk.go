@@ -1,6 +1,7 @@
 package meta
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -9,8 +10,7 @@ import (
 type paths struct {
 	q db
 
-	root   string
-	rooted bool
+	drives, drivesRead bool
 
 	items map[string]*Item
 
@@ -82,15 +82,26 @@ func (p *paths) item(id string) (*Item, error) {
 	return nil, ErrNotFound
 }
 
-func (p *paths) rootID() (string, error) {
-	if !p.rooted {
-		root, err := stateIn(p.q, StateRootID)
+func (p *paths) rootID() (string, error) { return TopID, nil }
+
+func (p *paths) hasDrives() (bool, error) {
+	if !p.drivesRead {
+		err := p.q.QueryRow(`SELECT EXISTS (SELECT 1 FROM items WHERE parent = ? AND trashed = 0)`, SharedDrivesID).
+			Scan(&p.drives)
 		if err != nil {
-			return "", fmt.Errorf("meta: state %s: %w", StateRootID, err)
+			return false, fmt.Errorf("meta: shared drives: %w", err)
 		}
-		p.root, p.rooted = root, true
+		p.drivesRead = true
 	}
-	return p.root, nil
+	return p.drives, nil
+}
+
+func (p *paths) emptyDrives(it Item) (bool, error) {
+	if it.ID != SharedDrivesID {
+		return false, nil
+	}
+	has, err := p.hasDrives()
+	return !has, err
 }
 
 func (p *paths) visible(id string) error {
@@ -115,6 +126,9 @@ func (p *paths) climb(id string) error {
 	}
 	if it.Trashed || it.Parent == "" || !isListed(it.Kind) || !p.linkShown(*it) {
 		return ErrNotShown
+	}
+	if empty, err := p.emptyDrives(*it); err != nil || empty {
+		return cmp.Or(err, ErrNotShown)
 	}
 	if err := p.visible(it.Parent); !errors.Is(err, ErrNotFound) {
 		return err
@@ -147,7 +161,7 @@ func (p *paths) linkShown(it Item) bool {
 }
 
 func (p *paths) of(id string) (string, error) {
-	if err := p.visible(id); err != nil || id == p.root {
+	if err := p.visible(id); err != nil || id == TopID {
 		return "", err
 	}
 	if at, ok := p.at[id]; ok {

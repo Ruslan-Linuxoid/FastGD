@@ -35,7 +35,7 @@ func TestShortcutReadsAtAnotherPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = syscall.Unmount(other, syscall.MNT_DETACH) })
-	if got, err := os.ReadFile(filepath.Join(other, "Links/report")); err != nil || string(got) != "the report" {
+	if got, err := os.ReadFile(filepath.Join(other, "My Drive/Links/report")); err != nil || string(got) != "the report" {
 		t.Fatalf("reading through the shortcut at another path: %q, %v", got, err)
 	}
 }

@@ -41,10 +41,7 @@ func MayMove(src, srcDir, dst Item) error {
 }
 
 func lostFolder(tx txn, dirs []string, now time.Time) (string, []Item, error) {
-	var parent string
-	if err := tx.QueryRow(`SELECT value FROM state WHERE key = ?`, StateRootID).Scan(&parent); err != nil {
-		return "", nil, err
-	}
+	parent := TopID
 	var made []Item
 	for _, dir := range append([]string{LostName}, dirs...) {
 		var have string

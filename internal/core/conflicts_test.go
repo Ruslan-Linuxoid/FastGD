@@ -15,7 +15,14 @@ import (
 	"github.com/Ruslan-Linuxoid/FastGD/internal/testenv"
 )
 
-const lostDir = "Lost and Found (FastGD)"
+const lostDir = "/Lost and Found (FastGD)/My Drive"
+
+const lostTop = "/Lost and Found (FastGD)"
+
+func hasLost(env *testenv.Env) bool {
+	_, err := env.Resolve(lostTop)
+	return err == nil
+}
 
 func conflictName(stem, ext string) *regexp.Regexp {
 	return regexp.MustCompile(`^` + regexp.QuoteMeta(stem) + ` \(конфликт \d{4}-\d{2}-\d{2} ` +
@@ -238,7 +245,7 @@ func requireLostStaysOutOfDrive(t *testing.T, env *testenv.Env, as string, local
 	env.Restart()
 	uploadAll(t, env)
 	for _, f := range env.Emu.All() {
-		if strings.Contains(f.Name, "конфликт") || f.Name == lostDir {
+		if strings.Contains(f.Name, "конфликт") || f.Name == meta.LostName {
 			t.Fatalf("%q went to Drive", f.Name)
 		}
 	}

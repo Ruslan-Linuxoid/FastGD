@@ -118,7 +118,7 @@ func killAfterTheStepOfAMoveIntoLostAndFound(t *testing.T, step string) {
 	d.kill()
 	d.dieAfter = ""
 	d.start()
-	lost := d.path("Lost and Found (FastGD)/docs")
+	lost := d.path("/Lost and Found (FastGD)/My Drive/docs")
 	waitFor(t, "the local version in Lost and Found", 2*time.Minute, func() bool {
 		names, _ := filepath.Glob(lost + "/a (конфликт *).bin")
 		if len(names) != 1 {
@@ -238,7 +238,7 @@ func waitChangeInLostAndFound(t *testing.T, d *daemon, want []byte) []string {
 	t.Helper()
 	var names []string
 	waitFor(t, "the change in Lost and Found", 2*time.Minute, func() bool {
-		names, _ = filepath.Glob(d.path("Lost and Found (FastGD)") + "/a (конфликт *).bin")
+		names, _ = filepath.Glob(d.path("/Lost and Found (FastGD)/My Drive") + "/a (конфликт *).bin")
 		for _, n := range names {
 			if got, err := os.ReadFile(n); err == nil && bytes.Equal(got, want) {
 				return true

@@ -26,6 +26,7 @@ func (e *Emulator) routes() {
 	m.HandleFunc("PUT /upload/drive/v3/files/{id}", e.handleChunk)
 	m.HandleFunc("PATCH /drive/v3/files/{id}", e.handlePatch)
 	m.HandleFunc("GET /drive/v3/about", e.handleAbout)
+	m.HandleFunc("GET /drive/v3/drives", e.handleDrives)
 	m.HandleFunc("GET /drive/v3/files/{id}/revisions/{rev}", e.handleRevisionGet)
 	m.HandleFunc("PATCH /drive/v3/files/{id}/revisions/{rev}", e.handleRevisionPatch)
 	e.mux = m
@@ -58,7 +59,7 @@ func (e *Emulator) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *Emulator) serve(w http.ResponseWriter, r *http.Request) {
-	if e.refuse(w, r) {
+	if e.refuse(w, r) || e.unsupported(w, r) {
 		return
 	}
 	e.mux.ServeHTTP(w, r)
@@ -119,11 +120,15 @@ func formatTime(t time.Time) string { return t.UTC().Format("2006-01-02T15:04:05
 
 func (e *Emulator) apiFile(f *File) *drive.File {
 	df := &drive.File{
-		Kind:              "drive#file",
-		Id:                f.ID,
-		Name:              f.Name,
-		MimeType:          f.MimeType,
-		Parents:           append([]string(nil), f.Parents...),
+		Kind:      "drive#file",
+		Id:        f.ID,
+		Name:      f.Name,
+		MimeType:  f.MimeType,
+		Parents:   append([]string(nil), f.Parents...),
+		DriveId:   f.DriveID,
+		OwnedByMe: !f.SharedWithMe && !f.OpenedByLink && f.DriveID == "",
+
+		ForceSendFields:   []string{"OwnedByMe"},
 		Trashed:           e.trashed(f),
 		ExplicitlyTrashed: f.Trashed,
 		Version:           f.Version,
@@ -134,7 +139,10 @@ func (e *Emulator) apiFile(f *File) *drive.File {
 		df.Size = int64(len(f.Content))
 		df.Md5Checksum = f.md5
 		df.HeadRevisionId = f.HeadRevision
-		df.ForceSendFields = []string{"Size"}
+		df.ForceSendFields = append(df.ForceSendFields, "Size")
+	}
+	if f.SharedWithMe {
+		df.SharedWithMeTime = formatTime(f.Created)
 	}
 	df.Capabilities = apiCapabilities(f)
 	if f.isGoogleType() {
@@ -157,6 +165,7 @@ func apiCapabilities(f *File) *drive.FileCapabilities {
 		CanTrash:               !f.CannotTrash,
 		CanRename:              !f.CannotRename,
 		CanMoveItemWithinDrive: !f.CannotMoveWithinDrive,
+		CanMoveItemOutOfDrive:  !f.CannotMoveOutOfDrive,
 		CanReadRevisions:       !f.CannotReadRevisions,
 		CanRemoveMyDriveParent: !f.CannotMove,
 
@@ -172,6 +181,7 @@ func apiCapabilities(f *File) *drive.FileCapabilities {
 		{"CanDownload", "canDownload", &caps.CanDownload}, {"CanModifyContent", "canModifyContent", &caps.CanModifyContent},
 		{"CanTrash", "canTrash", &caps.CanTrash}, {"CanRename", "canRename", &caps.CanRename},
 		{"CanMoveItemWithinDrive", "canMoveItemWithinDrive", &caps.CanMoveItemWithinDrive},
+		{"CanMoveItemOutOfDrive", "canMoveItemOutOfDrive", &caps.CanMoveItemOutOfDrive},
 		{"CanRemoveMyDriveParent", "canRemoveMyDriveParent", &caps.CanRemoveMyDriveParent},
 		{"CanAddMyDriveParent", "canAddMyDriveParent", &caps.CanAddMyDriveParent},
 		{"CanReadRevisions", "canReadRevisions", &caps.CanReadRevisions},
@@ -231,7 +241,8 @@ func (e *Emulator) handleList(w http.ResponseWriter, r *http.Request) {
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	writeJSON(w, e.listFrom(start, size, onlyLive))
+	allDrives := allDrivesAsked(q) && q.Get("corpora") == "allDrives"
+	writeJSON(w, e.listFrom(start, size, onlyLive, allDrives))
 }
 
 func (e *Emulator) handleStartPageToken(w http.ResponseWriter, _ *http.Request) {

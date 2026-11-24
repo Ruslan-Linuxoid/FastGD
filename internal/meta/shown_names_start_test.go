@@ -113,7 +113,8 @@ func TestLostAndFoundTakesItsNameAtAStart(t *testing.T) {
 	wantShown(t, s, "root", map[string]string{LostName: "theirs"})
 	got := addLostAndRequireNames(t, s)
 
-	if _, err := s.w.Exec(`UPDATE items SET shown_as = ''`); err != nil {
+	if _, err := s.w.Exec(`UPDATE items SET shown_as = '' WHERE id NOT IN (?, ?, ?, ?)`, TopID, "root", SharedWithMeID,
+		SharedDrivesID); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.Close(); err != nil {
@@ -122,9 +123,10 @@ func TestLostAndFoundTakesItsNameAtAStart(t *testing.T) {
 	if s, err = Open(path); err != nil {
 		t.Fatal(err)
 	}
-	if again := shownIn(t, s, "root"); !maps.Equal(again, got) {
+	if again := shownIn(t, s, TopID); !maps.Equal(again, got) {
 		t.Fatalf("after the names were given anew the root shows %v, want %v", again, got)
 	}
+	wantShown(t, s, "root", map[string]string{LostName: "theirs"})
 }
 
 func TestNulInADriveNameShowsAsItsStandIn(t *testing.T) {
@@ -141,9 +143,9 @@ func addLostAndRequireNames(t *testing.T, s *Store) map[string]string {
 		0)); err != nil {
 		t.Fatal(err)
 	}
-	got := shownIn(t, s, "root")
-	if got[LostName+" (1)"] != "theirs" || len(got) != 2 || got[LostName] == "theirs" || got[LostName] == "" {
-		t.Fatalf("the root shows %v, want Lost and Found under its name and the folder of Drive under a number", got)
+	got := shownIn(t, s, TopID)
+	if got[LostName] == "" || got[LostName] == "theirs" || got[MyDriveName] != "root" {
+		t.Fatalf("the root of the mount shows %v, want Lost and Found under its name beside My Drive", got)
 	}
 	return got
 }

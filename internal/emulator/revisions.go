@@ -79,8 +79,7 @@ func (e *Emulator) handleRevisionGet(w http.ResponseWriter, r *http.Request) {
 
 	var abusive, forbidden, noRevisions bool
 	if f := e.files[r.PathValue("id")]; f != nil {
-
-		abusive = f.abuseRefused(r.URL.Query().Get("acknowledgeAbuse") == "true")
+		abusive = f.abuseRefused(flag(r.URL.Query(), "acknowledgeAbuse"))
 		forbidden = f.CannotDownload
 		noRevisions = f.CannotReadRevisions
 	}

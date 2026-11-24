@@ -67,7 +67,7 @@ func TestEditOfABarelyCachedFileSurvivesAChangeInDrive(t *testing.T) {
 	d.start()
 	base := e.Revisions(id)[0].ID
 	changed, want := editWhileDriveChangesBig(t, e, d, id, content)
-	lost := d.path("Lost and Found (FastGD)/docs")
+	lost := d.path("/Lost and Found (FastGD)/My Drive/docs")
 	requireWholeLocalVersionInLostAndFound(t, lost, want)
 	if got, err := os.ReadFile(d.path("docs/big.bin")); err != nil || !bytes.Equal(got, changed) {
 		t.Fatalf("the file does not read as the version put in Drive: %v", err)
@@ -147,7 +147,7 @@ func requireVersionTakenOutOfLostAndFoundGoesToDrive(t *testing.T, e *emu, d *da
 		t.Fatal(err)
 	}
 	waitInDrive(t, e, want, "docs", "mine.bin")
-	if _, err := os.Stat(d.path("Lost and Found (FastGD)")); !os.IsNotExist(err) {
+	if _, err := os.Stat(d.path("/Lost and Found (FastGD)")); !os.IsNotExist(err) {
 		t.Fatalf("Lost and Found is still there, emptied: %v", err)
 	}
 }

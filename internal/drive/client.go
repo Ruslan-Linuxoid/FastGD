@@ -1,13 +1,14 @@
 package drive
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
-	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -21,12 +22,12 @@ const MimeFolder = "application/vnd.google-apps.folder"
 
 const listPageSize = 1000
 
-const fileFields = "id,name,mimeType,parents,trashed,explicitlyTrashed,size,md5Checksum,headRevisionId,version," +
-	"modifiedTime,createdTime,shortcutDetails(targetId)," +
+const fileFields = "id,name,mimeType,parents,driveId,sharedWithMeTime,trashed,explicitlyTrashed,size,md5Checksum," +
+	"headRevisionId,version,modifiedTime,createdTime,shortcutDetails(targetId)," +
 	"capabilities(" + rightsAsked + ")"
 
 const rightsAsked = "canModifyContent,canTrash,canRename,canAddChildren,canRemoveChildren,canDownload," +
-	"canRemoveMyDriveParent,canAddMyDriveParent,canReadRevisions"
+	"canRemoveMyDriveParent,canAddMyDriveParent,canReadRevisions,canMoveItemWithinDrive,canMoveItemOutOfDrive"
 
 func FieldsMark() string {
 	sum := sha256.Sum256([]byte(fileFields))
@@ -38,7 +39,11 @@ type File struct {
 	Name     string
 	MimeType string
 	Parents  []string
-	Trashed  bool
+
+	DriveID string
+
+	Shared  bool
+	Trashed bool
 
 	OwnTrashed bool
 	Size       int64
@@ -57,7 +62,7 @@ type File struct {
 }
 
 type Rights struct {
-	ModifyContent, Trash, Rename, Move, AddChildren, RemoveChildren, Download bool
+	ModifyContent, Trash, Rename, Move, AddChildren, RemoveChildren, Download, OutOfDrive bool
 }
 
 type Options struct {
@@ -68,6 +73,8 @@ type Options struct {
 	Limits Limits
 
 	Speed Speed
+
+	Log *slog.Logger
 }
 
 type Client struct {
@@ -82,6 +89,8 @@ type Client struct {
 
 	speed    Speed
 	down, up *rate.Limiter
+
+	changesPage *pageSize
 }
 
 func (c *Client) Speed() Speed { return c.speed }
@@ -112,6 +121,7 @@ func New(ctx context.Context, o Options) (*Client, error) {
 	c := &Client{
 		svc: svc, pace: newPacer(o.Limits), http: o.HTTPClient, uploadBase: base,
 		speed: o.Speed, down: newThrottle(o.Speed.Download), up: newThrottle(o.Speed.Upload),
+		changesPage: newPageSize(cmp.Or(o.Log, slog.New(slog.DiscardHandler))),
 	}
 	hc.CheckRedirect = c.redirectsToDrive(hc.CheckRedirect)
 	return c, nil
@@ -131,7 +141,7 @@ var ErrNotFound = errors.New("drive: no such item")
 
 func (c *Client) Get(ctx context.Context, id string) (*File, error) {
 	f, err := get(ctx, c, costOther, func() (*drive.File, error) {
-		return c.svc.Files.Get(id).Fields(fileFields + ",webViewLink").Context(ctx).Do()
+		return c.svc.Files.Get(id).Fields(fileFields + ",webViewLink").SupportsAllDrives(true).Context(ctx).Do()
 	})
 	if hasCode(err, http.StatusNotFound) {
 		return nil, fmt.Errorf("drive: get %s: %w", id, ErrNotFound)
@@ -148,7 +158,7 @@ func (c *Client) Get(ctx context.Context, id string) (*File, error) {
 
 func (c *Client) StartPageToken(ctx context.Context) (string, error) {
 	t, err := get(ctx, c, costOther, func() (*drive.StartPageToken, error) {
-		return c.svc.Changes.GetStartPageToken().Context(ctx).Do()
+		return c.svc.Changes.GetStartPageToken().SupportsAllDrives(true).Context(ctx).Do()
 	})
 	if err != nil {
 		return "", fmt.Errorf("drive: start page token: %w", err)
@@ -161,6 +171,9 @@ func (c *Client) ListAll(ctx context.Context, fn func([]File) error) error {
 	for {
 		call := c.svc.Files.List().
 			Q("trashed = false").
+			Corpora("allDrives").
+			IncludeItemsFromAllDrives(true).
+			SupportsAllDrives(true).
 			PageSize(listPageSize).
 			Fields("nextPageToken,files(" + fileFields + ")").
 			Context(ctx)
@@ -189,61 +202,4 @@ func (c *Client) ListAll(ctx context.Context, fn func([]File) error) error {
 		}
 		token = page.NextPageToken
 	}
-}
-
-var validID = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
-
-func ValidID(id string) bool { return validID.MatchString(id) }
-
-type BadIDError struct{ ID string }
-
-func (e *BadIDError) Error() string { return fmt.Sprintf("an answer holds %q for a fileId", e.ID) }
-
-func convert(f *drive.File) (File, error) {
-	if !ValidID(f.Id) {
-		return File{}, &BadIDError{ID: f.Id}
-	}
-	out := File{
-		ID:           f.Id,
-		Name:         f.Name,
-		MimeType:     f.MimeType,
-		Parents:      f.Parents,
-		Trashed:      f.Trashed,
-		OwnTrashed:   f.ExplicitlyTrashed,
-		Size:         f.Size,
-		MD5:          f.Md5Checksum,
-		HeadRevision: f.HeadRevisionId,
-		Version:      f.Version,
-	}
-	var err error
-	if out.Modified, err = parseTime(f.ModifiedTime); err != nil {
-		return File{}, fmt.Errorf("drive: %s modifiedTime: %w", f.Id, err)
-	}
-	if out.Created, err = parseTime(f.CreatedTime); err != nil {
-		return File{}, fmt.Errorf("drive: %s createdTime: %w", f.Id, err)
-	}
-	if f.ShortcutDetails != nil {
-		out.ShortcutTarget = f.ShortcutDetails.TargetId
-	}
-	out.ViewLink = f.WebViewLink
-	out.Can = Rights{ModifyContent: true, Trash: true, Rename: true, Move: true, AddChildren: true, RemoveChildren: true,
-		Download: true}
-	if c := f.Capabilities; c != nil {
-		out.Can = Rights{
-			ModifyContent: c.CanModifyContent,
-			Trash:         c.CanTrash,
-			Rename:        c.CanRename,
-			Move:          c.CanRemoveMyDriveParent,
-			AddChildren:   c.CanAddChildren,
-
-			RemoveChildren: c.CanRemoveChildren || f.MimeType != MimeFolder,
-
-			Download: c.CanDownload || f.MimeType == MimeFolder,
-		}
-		if !c.CanReadRevisions {
-
-			out.HeadRevision = ""
-		}
-	}
-	return out, nil
 }

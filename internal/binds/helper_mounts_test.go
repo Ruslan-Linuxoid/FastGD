@@ -33,3 +33,21 @@ func TestTheHelperBindsUnderAMountInThatIsALink(t *testing.T) {
 		t.Fatalf("bind under a link of mount_in: %v, mounted %q", err, th.mounted)
 	}
 }
+
+func TestTheHelperUnbindsNoMountFolderUnderAMountInThatIsALink(t *testing.T) {
+	t.Parallel()
+	th := newTestHelper(t)
+	link := filepath.Join(th.outside, "drive")
+	if err := os.Symlink(th.mountIn, link); err != nil {
+		t.Fatal(err)
+	}
+	th.mountIn = link
+
+	through := filepath.Join(link, filepath.Base(th.mountPoint))
+	th.ours[through] = true
+	for _, dir := range []string{th.mountPoint, through} {
+		if err := th.unbind(dir); err == nil || len(th.unmounted) != 0 {
+			t.Fatalf("the mount folder %s was unbound under a link of mount_in: %v, %q", dir, err, th.unmounted)
+		}
+	}
+}

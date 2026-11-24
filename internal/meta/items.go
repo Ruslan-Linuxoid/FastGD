@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 )
 
 var ErrIDReused = errors.New("meta: Drive holds an item under the fileId of one made here")
@@ -14,21 +13,13 @@ func (s *Store) ResetItems() error {
 		`DELETE FROM pieces; DELETE FROM upload_sessions; DELETE FROM op_deps; DELETE FROM ops; DELETE FROM items`)
 }
 
-func (s *Store) SetRoot(id string, mtime time.Time) error {
-	return exec(s.w, "set root", `
-		INSERT INTO items(ino, id, kind, mime, name, parent, dname, trashed, size, md5, version, mtime, ctime)
-		VALUES (?, ?, ?, ?, '', '', '', 0, 0, '', 0, ?, 0)
-		ON CONFLICT(id) DO UPDATE SET mtime = excluded.mtime`,
-		RootIno, id, KindDir, mimeFolder, nanos(mtime))
-}
-
 const upsertItem = `
 	INSERT INTO items(id, kind, mime, name, parent, dname, trashed, size, md5, version, mtime, ctime,
-		r_md5, r_version, r_name, r_parent, r_trashed, r_mtime, target, denied, rev)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		r_md5, r_version, r_name, r_parent, r_trashed, r_mtime, target, denied, rev, shared)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		kind = excluded.kind, mime = excluded.mime, ctime = excluded.ctime, target = excluded.target,
-		denied = excluded.denied,
+		denied = excluded.denied, shared = excluded.shared,
 		size = CASE WHEN ` + sqlContentLocal + ` THEN size ELSE excluded.size END,
 		md5 = CASE WHEN ` + sqlContentLocal + ` THEN md5 ELSE excluded.md5 END,
 		rev = CASE WHEN ` + sqlContentLocal + ` THEN rev ELSE excluded.rev END,
@@ -45,7 +36,8 @@ const upsertItem = `
 func upsertArgs(it Item) []any {
 	return []any{it.ID, it.Kind, it.Mime, it.Name, it.Parent, it.GroupName(),
 		it.Trashed, it.Size, it.MD5, it.Version, nanos(it.Mtime), nanos(it.Ctime),
-		it.MD5, it.Version, it.Name, it.Parent, it.Trashed, nanos(it.Mtime), it.ShortcutTarget, it.Denied, it.Rev}
+		it.MD5, it.Version, it.Name, it.Parent, it.Trashed, nanos(it.Mtime), it.ShortcutTarget, it.Denied, it.Rev,
+		it.Shared}
 }
 
 func (s *Store) PutItems(items []Item) error {

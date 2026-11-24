@@ -23,7 +23,7 @@ func TestReadyComesAfterTheMountAnswers(t *testing.T) {
 	e.WriteFile(e.Root(), "a.txt", []byte("a"))
 	d := newDaemon(t, e)
 	d.start()
-	if got := dirNames(t, d.mnt); !slices.Equal(got, []string{"Photos", "a.txt"}) {
+	if got := dirNames(t, d.myDrive()); !slices.Equal(got, []string{"Photos", "a.txt"}) {
 		t.Fatalf("root lists %q right after READY=1", got)
 	}
 }

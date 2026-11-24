@@ -18,7 +18,7 @@ type renaming struct {
 }
 
 func (f *FS) planMove(srcDir, src, dst meta.Item, newName string, flags uint32) (renaming, error) {
-	if err := f.checkMoveInto(src, srcDir, dst); err != nil {
+	if err := f.checkPlaces(srcDir, src, dst); err != nil {
 		return renaming{}, err
 	}
 	if err := f.roomForMove(src, srcDir, dst); err != nil {
@@ -32,7 +32,7 @@ func (f *FS) planMove(srcDir, src, dst meta.Item, newName string, flags uint32) 
 	if err != nil {
 		return renaming{}, err
 	}
-	if err := checkMoveRights(src, srcDir, dst, driveName); err != nil {
+	if err := f.checkMoveRights(src, srcDir, dst, driveName); err != nil {
 		return renaming{}, err
 	}
 

@@ -17,6 +17,8 @@ type Attr struct {
 	GID   uint32
 
 	Uncached bool
+
+	NameUncached bool
 }
 
 type DirEntry struct {
@@ -95,11 +97,17 @@ func (f *FS) GetAttr(ino uint64) (Attr, error) {
 }
 
 func (f *FS) Lookup(parent uint64, name string) (Attr, error) {
-	_, it, err := f.child(parent, name)
+	dir, it, err := f.child(parent, name)
 	if err != nil {
 		return Attr{}, err
 	}
-	return f.attr(it), nil
+	a := f.attr(it)
+	a.NameUncached = secondName(dir, it)
+	return a, nil
+}
+
+func secondName(dir, it meta.Item) bool {
+	return dir.ID == meta.SharedWithMeID && it.Parent != meta.SharedWithMeID
 }
 
 func (f *FS) ReadDir(ino uint64) ([]DirEntry, error) {
@@ -117,6 +125,7 @@ func (f *FS) ReadDir(ino uint64) ([]DirEntry, error) {
 	out := make([]DirEntry, len(entries))
 	for i, e := range entries {
 		out[i] = DirEntry{Name: e.Display, Attr: f.attrOf(e.Item, e.Link)}
+		out[i].Attr.NameUncached = secondName(p, e.Item)
 	}
 	return out, nil
 }

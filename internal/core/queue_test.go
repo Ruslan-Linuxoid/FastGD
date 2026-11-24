@@ -35,7 +35,7 @@ func TestCreationDriveNeverTakesGoesToLostAndFound(t *testing.T) {
 		t.Fatalf("after one try the root holds %q", names)
 	}
 	rounds(env, 4)
-	if names := env.Names(""); len(names) != 2 || names[0] != lostDir || names[1] != "good.txt" {
+	if names := env.Names(""); len(names) != 1 || names[0] != "good.txt" || !hasLost(env) {
 		t.Fatalf("after five tries the root holds %q", names)
 	}
 	requireShelved(t, env, "", "bad", ".txt", bad)
@@ -113,7 +113,7 @@ func TestFolderDriveNeverTakesShelvesWhatLiesInIt(t *testing.T) {
 	writeFile(t, env, "bad/sub", ".note.txt.swp", []byte("swap"))
 	rename(t, env, "", "moved.txt", "bad", "moved.txt")
 	rounds(env, 6)
-	if names := env.Names(""); len(names) != 2 || names[0] != lostDir || names[1] != "moved.txt" {
+	if names := env.Names(""); len(names) != 1 || names[0] != "moved.txt" || !hasLost(env) {
 		t.Fatalf("the root holds %q, want Lost and Found and the file moved back", names)
 	}
 	requireShelved(t, env, "bad/sub", "note", ".txt", note)

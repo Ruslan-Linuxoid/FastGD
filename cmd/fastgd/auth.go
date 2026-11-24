@@ -16,6 +16,9 @@ import (
 	"github.com/Ruslan-Linuxoid/FastGD/internal/drive"
 )
 
+var errNoKeyForAuth = errors.New("this build of FastGD carries no key of the app FastGD: pass -client-id, the JSON " +
+	"of an OAuth client of your own of the type Desktop app; the README tells how to make one, under \"Your own key\"")
+
 func authCmd(args []string) error {
 	fl := flag.NewFlagSet("auth", flag.ContinueOnError)
 	clientID := fl.String("client-id", "", "the JSON of an OAuth client of the type Desktop app; "+
@@ -29,6 +32,9 @@ func authCmd(args []string) error {
 		return errors.New("-token is required")
 	}
 	cfg, err := auth.Client(*clientID)
+	if errors.Is(err, auth.ErrNoAppClient) {
+		return errNoKeyForAuth
+	}
 	if err != nil {
 		return err
 	}

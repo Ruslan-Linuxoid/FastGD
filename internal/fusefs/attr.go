@@ -31,6 +31,9 @@ func fillEntry(a core.Attr, out *fuse.EntryOut) {
 	out.NodeId = a.Ino
 	fillAttr(a, &out.Attr)
 	out.SetEntryTimeout(cacheTimeout)
+	if a.NameUncached {
+		out.SetEntryTimeout(0)
+	}
 	out.SetAttrTimeout(attrTimeout(a))
 }
 

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Ruslan-Linuxoid/FastGD/internal/emulator"
+	"github.com/Ruslan-Linuxoid/FastGD/internal/meta"
 	"github.com/Ruslan-Linuxoid/FastGD/internal/testenv"
 )
 
@@ -30,7 +31,8 @@ func TestLostAndFoundIsOnlyHere(t *testing.T) {
 	}
 
 	for _, to := range []string{"", "Отчёты"} {
-		if err := env.FS.Rename(env.MustResolve("").Ino, lostDir, env.MustResolve(to).Ino, "mine", 0); err != syscall.EPERM {
+		if err := env.FS.Rename(env.MustResolve("/").Ino, meta.LostName, env.MustResolve(to).Ino, "mine",
+			0); err != syscall.EPERM {
 			t.Fatalf("a rename of Lost and Found into %q got %v, want EPERM", to, err)
 		}
 	}
